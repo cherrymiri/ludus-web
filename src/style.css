@@ -196,6 +196,8 @@ body {
 }
 body.is-ready #loading {
   opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.8s ease, visibility 0s linear 0.8s;
 }
 
 @media (max-width: 760px) {
