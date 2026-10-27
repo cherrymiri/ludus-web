@@ -1,0 +1,217 @@
+:root {
+  color-scheme: dark;
+  --ink: rgba(255, 255, 255, 0.88);
+  --ink-soft: rgba(255, 255, 255, 0.52);
+  --ink-faint: rgba(255, 255, 255, 0.28);
+  --mint: 160, 236, 244;
+  --gutter: clamp(24px, 3.4vw, 52px);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--ink);
+  overscroll-behavior: none;
+  font-family: 'Noto Sans KR', system-ui, sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+}
+#stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+  touch-action: none;
+}
+
+/* ── title ───────────────────────────── */
+.title {
+  position: fixed;
+  top: var(--gutter);
+  left: var(--gutter);
+  pointer-events: none;
+}
+.title h1 {
+  font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+  font-weight: 300;
+  font-size: clamp(30px, 2.6vw, 42px);
+  letter-spacing: 0.42em;
+  line-height: 1;
+  margin-right: -0.42em;
+}
+.title .rule {
+  display: block;
+  width: 36px;
+  height: 1px;
+  margin: 18px 0 14px;
+  background: var(--ink-faint);
+}
+.title p {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+
+/* ── success line ───────────────────── */
+#success-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(var(--mint), 0) 0%,
+    rgba(var(--mint), 0.26) 18%,
+    rgba(var(--mint), 0.26) 82%,
+    rgba(var(--mint), 0) 100%
+  );
+  transition: box-shadow 0.8s ease, background 0.8s ease;
+}
+#success-line .label {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 8px;
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  color: rgba(var(--mint), 0.5);
+  transition: color 0.8s ease;
+}
+#success-line.is-success {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--mint), 0) 0%,
+    rgba(var(--mint), 0.95) 22%,
+    rgba(var(--mint), 0.95) 78%,
+    rgba(var(--mint), 0) 100%
+  );
+  box-shadow: 0 0 14px 1px rgba(var(--mint), 0.45);
+}
+#success-line.is-success .label {
+  color: rgba(var(--mint), 0.95);
+}
+
+#success-text {
+  position: fixed;
+  left: var(--gutter);
+  margin-top: -22px;
+  transform: translateY(5px);
+  font-size: 13px;
+  letter-spacing: 0.7em;
+  margin-right: -0.7em;
+  color: rgb(var(--mint));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+#success-text.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── how to play ────────────────────── */
+.howto {
+  position: fixed;
+  right: var(--gutter);
+  top: var(--gutter);
+  pointer-events: none;
+}
+.howto h2 {
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.34em;
+  color: var(--ink-soft);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  width: 230px;
+}
+.howto ul {
+  list-style: none;
+  display: grid;
+  gap: 9px;
+}
+.howto li {
+  display: grid;
+  grid-template-columns: 16px 82px auto;
+  align-items: center;
+  column-gap: 12px;
+  font-size: 11px;
+}
+.howto svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.howto svg .solid {
+  fill: var(--ink-faint);
+  stroke: none;
+}
+.howto .key {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  color: var(--ink);
+}
+.howto .desc {
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+.howto .hint {
+  margin-top: 16px;
+  font-size: 11px;
+  color: rgba(var(--mint), 0.62);
+  letter-spacing: 0.04em;
+}
+
+/* ── loading ────────────────────────── */
+#loading {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  letter-spacing: 0.5em;
+  color: var(--ink-faint);
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+body.is-ready #loading {
+  opacity: 0;
+}
+
+@media (max-width: 760px) {
+  .howto {
+    top: auto;
+    right: auto;
+    left: var(--gutter);
+    bottom: var(--gutter);
+  }
+  .howto li {
+    grid-template-columns: 16px 74px auto;
+  }
+  .howto h2 {
+    width: auto;
+  }
+  .howto .hint {
+    display: none;
+  }
+}
