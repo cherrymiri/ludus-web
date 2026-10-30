@@ -54,6 +54,23 @@ export class Claw {
     this.closedAngle = CLAW.closedEmptyDeg * D2R;
   }
 
+  reset(y) {
+    this.pos.set(0, y, 0);
+    this.target.set(0, y);
+    this.vel.set(0, 0, 0);
+    this.closed = false;
+    this.aUser = 0;
+    for (const a of this.arms) {
+      a.angle = 0;
+      a.limited = false;
+      a.pen = -1;
+      a.lastPush = 0;
+      a.arm.rotation.z = 0;
+    }
+    this.wire.scale.y = Math.max(0.05, (WIRE_TOP - (y + this.wireY0)) / this.wireLen);
+    this.node.updateMatrixWorld(true);
+  }
+
   // ── movement ────────────────────────────────────────────────
   move(dt, minY) {
     const p = this.pos;

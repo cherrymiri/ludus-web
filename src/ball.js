@@ -67,6 +67,19 @@ export class Ball {
     this.glow = 0;
   }
 
+  // Fresh ball resting at the centre: no motion, no dents, no wobble.
+  reset() {
+    this.pos.set(0, this.Rbot, 0);
+    this.vel.set(0, 0, 0);
+    this.omega.set(0, 0, 0);
+    this.spin.identity();
+    this.wob = this.wobV = this.jig = this.jigV = 0;
+    this.dents = [];
+    this.glow = 0;
+    this.floorSquash = 1;
+    this.grounded = true;
+  }
+
   bottom() {
     return this.pos.y - this.Rbot * this.floorSquash * (1 + Math.min(0, this.wob));
   }

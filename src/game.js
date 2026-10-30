@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OUTCOMES, PITY, ALIGNMENT_INFLUENCE, GRIP, VARIATION, SUCCESS, BALL } from './config.js';
+import { OUTCOMES, PITY, ALIGNMENT_INFLUENCE, GRIP, HOLD, VARIATION, SUCCESS, CLAW } from './config.js';
 
 const rand = ([a, b]) => a + Math.random() * (b - a);
 const sign = () => (Math.random() < 0.5 ? -1 : 1);
@@ -10,8 +10,9 @@ const easeOutBack = (t) => {
 };
 const _v = new THREE.Vector3();
 const _n = new THREE.Vector3();
+const _acc = new THREE.Vector3();
 
-// States: free → grip → (pop → free) | held → (slip → free) | success → free
+// States: free → grip → (pop → free) | held → (slip → free) | success (stays until reset())
 export class Game {
   constructor({ claw, ball, hud }) {
     this.claw = claw;
@@ -27,6 +28,40 @@ export class Game {
     this.depth = 0;
     this.forced = null; // for testing: window.__LUDUS.force('success')
     this.log = [];
+    // held-ball sway (so it never looks glued to the claw)
+    this.lag = new THREE.Vector3();
+    this.lagV = new THREE.Vector3();
+    this.prevClawVel = new THREE.Vector3();
+    this.sag = 0;
+    this.successCount = 0;
+    this.resetting = false;
+  }
+
+  // No claw control while the win screen is up (or while resetting).
+  get locked() {
+    return this.state === 'success' || this.resetting;
+  }
+
+  // Back to a fresh attempt without reloading anything.
+  reset() {
+    this.state = 'free';
+    this.outcome = null;
+    this.p = {};
+    this.rel.set(0, 0, 0);
+    this.lag.set(0, 0, 0);
+    this.lagV.set(0, 0, 0);
+    this.prevClawVel.set(0, 0, 0);
+    this.sag = 0;
+    this.t = 0;
+    this.ghost = 0;
+    this.depth = 0;
+    this.fails = 0;
+    this.grabBottom = 0;
+    this.claw.reset(CLAW.startY);
+    this.ball.reset();
+    this.claw.updateArms(this.ball, 0.002, 'free');
+    this.collectDents();
+    this.ball.deform();
   }
 
   get holding() {
@@ -34,6 +69,7 @@ export class Game {
   }
 
   toggle() {
+    if (this.locked) return;
     const c = this.claw;
     c.closed = !c.closed;
     if (!c.closed && this.holding) this.release('opened');
@@ -64,12 +100,15 @@ export class Game {
     const b = this.ball;
     const quality =
       1 -
-      Math.min(1, Math.max(0, hd - 0.015) / (GRIP.centreTolerance - 0.015)) * 0.6 -
+      Math.min(1, Math.max(0, hd - GRIP.cleanRadius) / (GRIP.centreTolerance - GRIP.cleanRadius)) * 0.6 -
       THREE.MathUtils.clamp((tipY - (b.pos.y - 0.035)) / 0.045, 0, 1) * 0.4;
     this.outcome = this.chooseOutcome(quality);
     this.state = 'grip';
     this.t = 0;
     this.rel.copy(b.pos).sub(this.claw.pos);
+    this.lag.set(0, 0, 0);
+    this.lagV.set(0, 0, 0);
+    this.sag = 0;
     b.vel.set(0, 0, 0);
     b.omega.set(0, 0, 0);
     b.floorSquash = 1;
@@ -140,7 +179,8 @@ export class Game {
     // 2. ball
     if (this.ghost > 0) this.ghost -= dt;
     if (this.holding) {
-      b.pos.copy(c.pos).add(this.rel);
+      if (this.state !== 'success') this.updateSway(dt);
+      b.pos.copy(c.pos).add(this.rel).add(this.lag);
       b.grounded = false;
       b.floorSquash = 1;
     } else {
@@ -176,6 +216,23 @@ export class Game {
     this.collectDents();
     b.stepSecondary(dt);
     b.deform();
+  }
+
+  // The held ball lags behind the claw's acceleration like a soft weight on a spring.
+  updateSway(dt) {
+    const c = this.claw;
+    if (dt <= 0) return;
+    _acc.copy(c.vel).sub(this.prevClawVel).divideScalar(dt);
+    this.prevClawVel.copy(c.vel);
+    _acc.clampLength(0, 12);
+    const k = HOLD.swayStiffness;
+    const d = HOLD.swayDamping;
+    this.lagV.x += (-k * this.lag.x - d * this.lagV.x - _acc.x * HOLD.swayAmount * k) * dt;
+    this.lagV.y += (-k * this.lag.y - d * this.lagV.y - _acc.y * HOLD.swayAmount * k * 0.6) * dt;
+    this.lag.addScaledVector(this.lagV, dt);
+    this.lag.z = 0;
+    if (this.lag.length() > HOLD.swayMax) this.lag.setLength(HOLD.swayMax);
+    this.ball.jigV += -_acc.x * 0.004;
   }
 
   // Claw cannot descend through the top of a resting/free ball.
@@ -277,8 +334,16 @@ export class Game {
     const hold = GRIP.holdDepth[this.outcome] ?? GRIP.holdDepth.success;
     this.depth = THREE.MathUtils.lerp(GRIP.squeezeDepth, hold, recov * recov * (3 - 2 * recov));
 
+    // outcomes that will fail sag slowly in the grip — it never feels locked in
+    if (this.outcome !== 'success' && this.sag < HOLD.sagMax) {
+      const ds = HOLD.sagSpeed * dt;
+      this.sag += ds;
+      this.rel.y -= ds;
+    }
+
     const line = SUCCESS.lineY;
     if (this.outcome === 'success') {
+      // judged on the real ball, while it is really held
       if (bottom > line) this.startSuccess();
       return;
     }
@@ -300,25 +365,44 @@ export class Game {
     const over = c.pos.y + this.rel.y - b.Rbot - (SUCCESS.lineY - 0.004);
     if (over > 0) this.rel.y -= over;
     b.omega.set(p.drift.z * 40, 0, -p.drift.x * 40);
-    b.pos.copy(c.pos).add(this.rel);
+    b.pos.copy(c.pos).add(this.rel).add(this.lag);
     if (b.top() < c.lowestTipY() - 0.004 || b.bottom() <= 0.004) this.release('slip');
   }
 
   startSuccess() {
+    if (this.state === 'success') return; // judged once
     this.state = 'success';
+    this.successCount++;
     this.t = 0;
     this.fails = 0;
+    // settle the ball where it is (sway folded in), never back below the line
+    this.rel.add(this.lag);
+    this.lag.set(0, 0, 0);
+    this.lagV.set(0, 0, 0);
+    this.hopBase = Math.max(this.rel.y, SUCCESS.lineY + this.ball.Rbot + 0.008 - this.claw.pos.y);
+    this.hopsDone = 0;
+    this.claw.target.set(this.claw.pos.x, this.claw.pos.y); // freeze the claw where it is
     this.ball.glow = 1;
     this.ball.kick(0.35, 0);
-    this.hud.success();
   }
 
+  // The ball gives in: a couple of happy hops inside the claw, then it stays put.
   update_success(dt) {
     this.t += dt;
-    if (this.t > SUCCESS.holdSeconds) {
-      this.claw.closed = false;
-      this.release('auto');
+    const T = 0.34;
+    const n = SUCCESS.bounceCount;
+    const t = this.t - 0.12;
+    let hop = 0;
+    if (t > 0 && t < n * T) {
+      const k = Math.floor(t / T);
+      hop = SUCCESS.bounceHeight * Math.pow(0.6, k) * Math.sin((Math.PI * (t - k * T)) / T);
+      if (k + 1 > this.hopsDone && t - k * T > T * 0.92) {
+        this.hopsDone = k + 1;
+        this.ball.kick(-0.9 * Math.pow(0.6, k), 0.12);
+      }
     }
+    this.rel.y = this.hopBase + Math.max(0, hop);
+    this.ball.glow = Math.max(this.ball.glow, 0.35 + 0.25 * Math.sin(this.t * 2.2));
   }
 
   collectDents() {

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ORB } from './config.js';
 
 // Real-time versions of the Blender materials. Mesh shapes are untouched;
 // only the shading is adapted so it reads well in WebGL on black.
@@ -74,7 +75,10 @@ export function createOrbBody(R, Ry) {
       uDeep: { value: new THREE.Color('#0a35a6') },
       uAqua: { value: new THREE.Color('#2fc6f2') },
       uMint: { value: new THREE.Color('#c4fff4') },
-      uDensity: { value: 1.0 },
+      uIce: { value: new THREE.Color('#bff4ff') },
+      uDensity: { value: ORB.density },
+      uClear: { value: ORB.clearCore },
+      uRim: { value: ORB.rimGlow },
     },
     vertexShader: /* glsl */ `
       varying vec3 vPos;
@@ -89,8 +93,8 @@ export function createOrbBody(R, Ry) {
     `,
     fragmentShader: /* glsl */ `
       uniform mat3 uRot;
-      uniform float uTime, uGlow, uR, uRy, uDensity;
-      uniform vec3 uDeep, uAqua, uMint;
+      uniform float uTime, uGlow, uR, uRy, uDensity, uClear, uRim;
+      uniform vec3 uDeep, uAqua, uMint, uIce;
       varying vec3 vPos;
       varying vec3 vCam;
       varying vec3 vN;
@@ -128,8 +132,11 @@ export function createOrbBody(R, Ry) {
           float r = clamp(length(p * vec3(1.0, uR / uRy, 1.0)) / uR, 0.0, 1.0);
           float layers = fbm(q * 15.0 + vec3(0.0, uTime * 0.05, 0.0));
           float pockets = fbm(q * 7.0 + 4.1);
-          float wisp = smoothstep(0.52, 0.78, layers);
+          float wisp = smoothstep(0.55, 0.8, layers);
           float dens = (2.2 + 9.0 * smoothstep(0.35, 0.8, pockets) + 30.0 * wisp) * uDensity;
+          // thick jelly skin, clearer heart: the claw and background show through the middle
+          float skin = 0.16 + 1.5 * smoothstep(0.5, 0.98, r);
+          dens *= mix(1.0, skin, uClear);
           vec3 c = mix(uDeep, uAqua, 0.15 + 0.85 * smoothstep(0.45, 1.0, r) * (0.55 + 0.45 * pockets));
           c = mix(c, uMint, wisp * 0.8);
           float lit = 0.5 + 0.75 * clamp(-p.y / uRy * 0.5 + 0.5, 0.0, 1.0) * 0.6 + 0.4 * clamp(p.y / uRy * 0.5 + 0.5, 0.0, 1.0);
@@ -138,9 +145,9 @@ export function createOrbBody(R, Ry) {
           col += (1.0 - A) * a * c;
           A += (1.0 - A) * a;
         }
-        float rim = pow(1.0 - facing, 2.5);
-        col += uAqua * rim * 0.22;
-        A = clamp(A + rim * 0.2, 0.0, 1.0);
+        float rim = pow(1.0 - facing, 2.2);
+        col += mix(uAqua, uIce, 0.6) * rim * uRim * 0.75;
+        A = clamp(A + rim * uRim * 0.55, 0.0, 1.0);
         col += uMint * uGlow * (0.06 + 0.22 * pow(1.0 - facing, 1.5));
         gl_FragColor = vec4(col, A);
         #include <tonemapping_fragment>

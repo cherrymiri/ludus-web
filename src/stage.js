@@ -1,7 +1,9 @@
 import * as THREE from 'three';
+import { CLAW, BALL, PLAYFIELD } from './config.js';
 
-const DIST = 1.8;
-const LOOK_Y = 0.42;
+// framed so the raised success line and the claw's top position both stay in view
+const DIST = 2.0;
+const LOOK_Y = 0.47;
 
 // Renderer, camera, studio environment (for chrome reflections) and soft lights.
 export function createStage(container) {
@@ -17,7 +19,7 @@ export function createStage(container) {
   scene.background = new THREE.Color(0x000000);
 
   const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 20);
-  camera.position.set(0, 0.55, DIST);
+  camera.position.set(0, 0.6, DIST);
   camera.lookAt(0, LOOK_Y, 0);
 
   // ── studio environment: black room with soft light strips (like the Blender cards)
@@ -60,9 +62,12 @@ export function createStage(container) {
     const h = container.clientHeight;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    // keep the whole playfield (≈1.3 m wide) visible on narrow windows
-    const minHalfWidth = 0.68;
-    const neededFov = 2 * Math.atan(minHalfWidth / camera.aspect / DIST);
+    // upright phones get a narrower play-field so the claw and ball stay large;
+    // every shape keeps the whole play-field in view
+    const field = camera.aspect < 0.85 ? PLAYFIELD.portrait : PLAYFIELD.wide;
+    CLAW.xLimit = field.clawX;
+    BALL.xLimit = field.ballX;
+    const neededFov = 2 * Math.atan(field.viewHalfWidth / camera.aspect / DIST);
     camera.fov = THREE.MathUtils.radToDeg(Math.max(THREE.MathUtils.degToRad(30), neededFov));
     camera.updateProjectionMatrix();
   }

@@ -7,6 +7,8 @@ import { Ball } from './ball.js';
 import { Game } from './game.js';
 import { Hud } from './hud.js';
 import { bindInput } from './input.js';
+import { bindTouch } from './touch.js';
+import { CLAW } from './config.js';
 import './style.css';
 
 const container = document.getElementById('stage');
@@ -31,10 +33,28 @@ const onLoaded = (gltf) => {
     const hud = new Hud(camera, renderer.domElement);
     const game = new Game({ claw, ball, hud });
     bindInput({ canvas: renderer.domElement, camera, claw, game });
+    const touch = bindTouch({ canvas: renderer.domElement, camera, claw, game });
 
     // start: claw hovering above the ball
-    claw.pos.set(0, 0.56, 0);
-    claw.target.set(0, 0.56);
+    claw.reset(CLAW.startY);
+
+    // "다시 잡아볼래?" — fade out, reset the scene in place (no reload, no re-download), fade in
+    const retry = document.getElementById('retry');
+    let resetTimer = 0;
+    retry.addEventListener('click', () => {
+      if (game.state !== 'success' || game.resetting) return;
+      game.resetting = true;
+      hud.leave();
+      document.body.classList.add('is-resetting');
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        game.reset();
+        hud.clear();
+        touch.sync();
+        document.body.classList.remove('is-resetting');
+        game.resetting = false;
+      }, 420);
+    });
 
     const onResize = () => {
       resize();
@@ -48,7 +68,8 @@ const onLoaded = (gltf) => {
     let paused = false;
     const frame = (dt, render = true) => {
       game.update(dt);
-      hud.update(game.state);
+      hud.update(game);
+      touch.sync();
       coreU.uTime.value += dt;
       // floor glow follows the ball and fades as it rises
       const h = Math.max(0, ball.bottom());
