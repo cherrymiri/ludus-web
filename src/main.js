@@ -56,17 +56,34 @@ const onLoaded = (gltf) => {
       }, 420);
     });
 
+    // Keep the 3D view matched to the real screen size. Mobile browsers (iOS Safari
+    // especially) can skip or delay 'resize' when the toolbar collapses or the phone
+    // rotates, which would leave the scene stretched — so we also check every frame.
+    let lastW = 0;
+    let lastH = 0;
     const onResize = () => {
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (!w || !h) return;
+      lastW = w;
+      lastH = h;
       resize();
       hud.place();
     };
+    const checkSize = () => {
+      if (container.clientWidth !== lastW || container.clientHeight !== lastH) onResize();
+    };
     window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', () => setTimeout(onResize, 250));
+    window.visualViewport?.addEventListener('resize', onResize);
+    if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(container);
     onResize();
 
     const clock = new THREE.Clock();
     const coreU = ball.uniforms;
     let paused = false;
     const frame = (dt, render = true) => {
+      checkSize();
       game.update(dt);
       hud.update(game);
       touch.sync();
