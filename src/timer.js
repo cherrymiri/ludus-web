@@ -1,7 +1,7 @@
 import { TIMER } from './config.js';
 
-// 60-second countdown on the real clock (ms timestamps passed in by the caller).
-// States: idle (01:00, not running) · play · won (frozen) · missed (00:00).
+// Countdown (TIMER.duration, 45 s) on the real clock (ms timestamps passed in by the caller).
+// States: idle (full time, not running) · play · won (frozen) · missed (00:00).
 export class Timer {
   constructor(el) {
     this.el = el;

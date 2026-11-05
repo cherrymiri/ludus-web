@@ -74,7 +74,7 @@ export const SUCCESS = {
 // ── TIME ATTACK ──────────────────────────────────────────────
 
 export const TIMER = {
-  duration: 60, // s, counted on the real clock from "시작하기"
+  duration: 45, // s, counted on the real clock from "시작하기"
   pulseFrom: 15, // ≤ 15 s: soft mint pulse once per second
   urgentFrom: 5, // ≤ 5 s: faster, brighter pulse (twice per second)
 };
@@ -95,7 +95,7 @@ export const MISS = {
 // Normal difficulty returns after that play (or on reload).
 
 export const ASSIST = {
-  // 60–31 s left: catches more often, slips less, off-centre grabs still hold
+  // 45–31 s left: catches more often, slips less, off-centre grabs still hold
   tier1: { bounceOff: 0.24, slipMid: 0.2, nearMiss: 0.16, success: 0.4 },
   tier2From: 30, // ≤ 30 s: every real grab holds; a slipping ball catches again
   tier3From: 15, // ≤ 15 s: the ball rolls toward a lowered claw more eagerly

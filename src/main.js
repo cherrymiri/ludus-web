@@ -42,7 +42,7 @@ const onLoaded = (gltf) => {
     const nowMs = () => virtualNow ?? performance.now();
     let lastNow = nowMs();
 
-    // waiting screen: claw hovering above the ball, timer at 01:00, controls locked
+    // waiting screen: claw hovering above the ball, timer at 00:45, controls locked
     game.reset();
     hud.startWorldY = (claw.lowestTipY() + ball.top()) / 2;
     hud.ballTopWorldY = ball.top();
@@ -53,7 +53,7 @@ const onLoaded = (gltf) => {
     };
     syncMode();
 
-    // "시작하기" — the 60 s countdown starts only here
+    // "시작하기" — the countdown starts only here
     const startBtn = document.getElementById('start');
     startBtn.addEventListener('click', () => {
       if (!game.start()) return;
