@@ -122,7 +122,7 @@ export function bindTouch({ canvas, camera, claw, game }) {
         grab.setAttribute('aria-pressed', String(claw.closed));
         label.textContent = claw.closed ? '놓기' : '잡기';
       }
-      const locked = game.locked;
+      const locked = game.dimmed;
       if (locked !== lastLocked) {
         lastLocked = locked;
         grab.disabled = locked;

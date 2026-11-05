@@ -70,12 +70,15 @@ const onLoaded = (gltf) => {
     let resetTimer = 0;
     retry.addEventListener('click', () => {
       if ((game.mode !== 'won' && game.mode !== 'missed') || game.resetting) return;
+      // a time-out earns a second chance; after any win it is back to normal difficulty
+      const secondChance = game.mode === 'missed' && !game.assist;
       game.resetting = true;
       hud.leave();
       document.body.classList.add('is-resetting');
       clearTimeout(resetTimer);
       resetTimer = setTimeout(() => {
         game.reset();
+        game.assist = secondChance;
         timer.reset();
         hud.clear();
         touch.sync();
@@ -114,7 +117,8 @@ const onLoaded = (gltf) => {
     const frame = (dt, render = true) => {
       checkSize();
       const now = nowMs();
-      if (game.mode === 'play' && timer.running && now >= timer.deadline) {
+      game.timeLeft = game.mode === 'play' && timer.running ? timer.remaining(now) : Infinity;
+      if (game.mode === 'play' && timer.running && now >= timer.deadline && !game.assist) {
         // Time ran out during this frame: first simulate up to the deadline, so a
         // success reached before it still counts; then the result is fixed.
         const pre = THREE.MathUtils.clamp((timer.deadline - lastNow) / 1000, 0, dt);

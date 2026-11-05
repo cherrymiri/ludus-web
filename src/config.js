@@ -34,6 +34,7 @@ export const GRIP = {
   centreTolerance: 0.04, // max horizontal offset (m) for the ball to be caught at all
   cleanRadius: 0.008, //   offset that still counts as "perfectly centred"
   tipAboveCentre: 0.012, // tips must be at most this far above the ball centre
+  settledRelY: -0.125, // ball centre below the claw origin in a normal grip (a lower catch eases up to this)
 };
 
 // While held, the ball is never glued to the claw: it lags behind claw motion
@@ -86,6 +87,25 @@ export const MISS = {
   hopSide: 0.07, // little side-to-side shimmy per hop (m/s)
   textDelay: 0.95, // s after time-out before "Missed me!" appears
   buttonDelay: 1.9, // s before "다시 잡아볼래?" appears
+};
+
+// ── SECOND CHANCE (after a time-out) ─────────────────────────
+// The play right after "Missed me!" quietly gets easier as time runs down and
+// always ends in "Okay, you win!" with at least ASSIST.guaranteeBy seconds left.
+// Normal difficulty returns after that play (or on reload).
+
+export const ASSIST = {
+  // 60–31 s left: catches more often, slips less, off-centre grabs still hold
+  tier1: { bounceOff: 0.24, slipMid: 0.2, nearMiss: 0.16, success: 0.4 },
+  tier2From: 30, // ≤ 30 s: every real grab holds; a slipping ball catches again
+  tier3From: 15, // ≤ 15 s: the ball rolls toward a lowered claw more eagerly
+  tolerance: [1.5, 1.9, 2.3], // × GRIP.centreTolerance per tier (how off-centre a grab may be)
+  magnet: [0, 6, 12], // pull (1/s²) of a resting ball toward a claw coming down on it
+  autoAt: 11, // s left: not caught yet → the ball hops over and gets itself caught
+  autoLiftAt: 9, // s left: held but not lifted → the claw lifts it
+  rescueAt: 6.2, // s left: last resort, the ball jumps up into the claw
+  guaranteeBy: 5.05, // s left: success is certain by now
+  hopSpeed: 0.55, // take-off speed of the approaching hops (m/s)
 };
 
 // ── BALL MATERIAL (transparency) ─────────────────────────────

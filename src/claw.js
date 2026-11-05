@@ -9,6 +9,7 @@ const _w = new THREE.Vector3();
 // Arm hinge rotation: Blender local +Y  ==  three.js local -Z  (arm.rotation.z = -angle).
 export class Claw {
   constructor(node) {
+    this.speedScale = 1;
     this.node = node;
     this.pos = node.position; // x/y driven by the visitor
     this.vel = new THREE.Vector3();
@@ -55,6 +56,7 @@ export class Claw {
   }
 
   reset(y) {
+    this.speedScale = 1;
     this.pos.set(0, y, 0);
     this.target.set(0, y);
     this.vel.set(0, 0, 0);
@@ -80,7 +82,7 @@ export class Claw {
     this.target.y = THREE.MathUtils.clamp(this.target.y, minY, CLAW.yMax);
     p.x += (this.target.x - p.x) * (1 - Math.exp(-CLAW.followX * dt));
     let dy = (this.target.y - p.y) * (1 - Math.exp(-CLAW.followY * dt));
-    const maxStep = CLAW.maxSpeedY * dt;
+    const maxStep = CLAW.maxSpeedY * this.speedScale * dt;
     dy = THREE.MathUtils.clamp(dy, -maxStep, maxStep);
     p.y = Math.max(p.y + dy, minY);
     p.y = Math.min(p.y, CLAW.yMax);

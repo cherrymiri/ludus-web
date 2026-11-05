@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OUTCOMES, PITY, ALIGNMENT_INFLUENCE, GRIP, HOLD, VARIATION, SUCCESS, CLAW, MISS } from './config.js';
+import { OUTCOMES, PITY, ALIGNMENT_INFLUENCE, GRIP, HOLD, VARIATION, SUCCESS, CLAW, MISS, ASSIST } from './config.js';
 
 const rand = ([a, b]) => a + Math.random() * (b - a);
 const sign = () => (Math.random() < 0.5 ? -1 : 1);
@@ -37,13 +37,34 @@ export class Game {
     this.successCount = 0;
     this.resetting = false;
     this.mode = 'idle'; // idle · play · won · missed
+    this.assist = false; // second chance after a time-out (set by main on retry)
+    this.timeLeft = Infinity; // s, fed by main every frame while playing
+    this.auto = null; // assist take-over sequence
     this.endT = 0; // s since won / missed
     this.tease = null;
   }
 
   // Claw can only be driven while playing (not before 시작하기, not after the result).
   get locked() {
-    return this.mode !== 'play' || this.state === 'success' || this.resetting;
+    return this.mode !== 'play' || this.state === 'success' || this.resetting || !!this.auto;
+  }
+
+  // controls look disabled only when the player is really done (not during an assist take-over)
+  get dimmed() {
+    return this.locked && !this.auto;
+  }
+
+  // 0 = normal · 1 / 2 / 3 = second-chance tiers by time left
+  get tier() {
+    if (!this.assist || this.mode !== 'play') return 0;
+    if (this.timeLeft <= ASSIST.tier3From) return 3;
+    if (this.timeLeft <= ASSIST.tier2From) return 2;
+    return 1;
+  }
+
+  get tolerance() {
+    const t = this.tier;
+    return t ? GRIP.centreTolerance * ASSIST.tolerance[t - 1] : GRIP.centreTolerance;
   }
 
   start() {
@@ -54,7 +75,7 @@ export class Game {
 
   // Time is up: the result is fixed as missed, whatever happens next.
   timeout() {
-    if (this.mode !== 'play') return false;
+    if (this.mode !== 'play' || this.assist) return false; // a second chance never times out
     this.mode = 'missed';
     this.endT = 0;
     this.tease = { hops: 0, still: 0, shimmy: false, side: Math.random() < 0.5 ? -1 : 1 };
@@ -70,6 +91,8 @@ export class Game {
   // Back to a fresh attempt without reloading anything.
   reset() {
     this.mode = 'idle';
+    this.timeLeft = Infinity;
+    this.auto = null;
     this.endT = 0;
     this.tease = null;
     this.state = 'free';
@@ -106,8 +129,10 @@ export class Game {
   // ── outcome choice ───────────────────────────────────────────
   chooseOutcome(quality) {
     if (this.forced) return this.forced;
-    const w = { ...OUTCOMES };
-    const inf = ALIGNMENT_INFLUENCE;
+    const tier = this.tier;
+    if (tier >= 2) return 'success';
+    const w = tier === 1 ? { ...ASSIST.tier1 } : { ...OUTCOMES };
+    const inf = tier === 1 ? ALIGNMENT_INFLUENCE * 0.5 : ALIGNMENT_INFLUENCE;
     // a clean, centred, low grab uses the configured rates as-is;
     // a sloppy one (off-centre / tips high) bounces off more and succeeds less
     const sloppy = 1 - THREE.MathUtils.clamp(quality, 0, 1);
@@ -128,7 +153,7 @@ export class Game {
     const b = this.ball;
     const quality =
       1 -
-      Math.min(1, Math.max(0, hd - GRIP.cleanRadius) / (GRIP.centreTolerance - GRIP.cleanRadius)) * 0.6 -
+      Math.min(1, Math.max(0, hd - GRIP.cleanRadius) / (this.tolerance - GRIP.cleanRadius)) * 0.6 -
       THREE.MathUtils.clamp((tipY - (b.pos.y - 0.035)) / 0.045, 0, 1) * 0.4;
     this.outcome = this.chooseOutcome(quality);
     this.state = 'grip';
@@ -196,6 +221,7 @@ export class Game {
   update(dt) {
     const c = this.claw;
     const b = this.ball;
+    if (this.assist && this.mode === 'play') this.updateAssist(dt);
     c.animateCommand(dt);
 
     // 1. claw position (with floor / ball limits)
@@ -308,8 +334,8 @@ export class Game {
 
     const hd = Math.hypot(b.pos.x - c.pos.x, b.pos.z);
     const tipY = c.lowestTipY();
-    const slow = b.vel.length() < 0.7;
-    const valid = hd < GRIP.centreTolerance && tipY <= b.pos.y + GRIP.tipAboveCentre && slow;
+    const slow = b.vel.length() < (this.tier >= 3 ? 1.2 : 0.7);
+    const valid = hd < this.tolerance && tipY <= b.pos.y + GRIP.tipAboveCentre && slow;
 
     if (valid && touching.length >= 2) {
       this.startGrip(hd, tipY);
@@ -373,6 +399,9 @@ export class Game {
 
     const line = SUCCESS.lineY;
     if (this.outcome === 'success') {
+      // a ball caught low in the claw slowly snuggles up into a normal grip,
+      // so a grab that is going to succeed can always clear the line
+      if (this.rel.y < GRIP.settledRelY) this.rel.y = Math.min(GRIP.settledRelY, this.rel.y + 0.06 * dt);
       // judged on the real ball, while it is really held
       if (bottom > line) this.startSuccess();
       return;
@@ -399,8 +428,15 @@ export class Game {
     if (b.top() < c.lowestTipY() - 0.004 || b.bottom() <= 0.004) this.release('slip');
   }
 
-  startSuccess() {
+  startSuccess(guaranteed = false) {
     if (this.state === 'success' || this.mode !== 'play') return; // judged once, only in time
+    if (guaranteed && !this.holding) {
+      // never expected to run (rescue starts earlier); keeps the second chance certain
+      this.rel.copy(this.ball.pos).sub(this.claw.pos);
+      this.claw.closed = true;
+    }
+    this.auto = null;
+    this.claw.speedScale = 1;
     this.state = 'success';
     this.mode = 'won';
     this.endT = 0;
@@ -435,6 +471,135 @@ export class Game {
     }
     this.rel.y = this.hopBase + Math.max(0, hop);
     this.ball.glow = Math.max(this.ball.glow, 0.35 + 0.25 * Math.sin(this.t * 2.2));
+  }
+
+  // ── second chance ────────────────────────────────────────────
+  // Runs only in the play right after a time-out. Each step is a physical nudge
+  // (a roll, a hop, a firmer grip, the claw lifting) so it never looks scripted,
+  // and the last steps make success certain well before the time is up.
+  updateAssist(dt) {
+    const c = this.claw;
+    const b = this.ball;
+    const tier = this.tier;
+    const left = this.timeLeft;
+    if (this.state === 'success') return;
+
+    // a grab that is already happening holds from tier 2 on
+    if (tier >= 2 && (this.state === 'grip' || this.state === 'held') && this.outcome !== 'success') this.outcome = 'success';
+    if (tier >= 2 && this.state === 'slip') {
+      // the jelly catches itself in the claw again
+      this.state = 'held';
+      this.outcome = 'success';
+      this.t = 0;
+      this.depth = GRIP.holdDepth.success;
+      this.grabBottom = Math.min(this.grabBottom ?? b.bottom(), b.bottom());
+      b.kick(0.25, 0);
+    }
+
+    // a resting ball rolls toward a claw that comes down near it
+    const k = ASSIST.magnet[tier - 1] || 0;
+    if (k && this.state === 'free' && this.ghost <= 0 && b.grounded && !this.auto) {
+      const dx = c.pos.x - b.pos.x;
+      if (Math.abs(dx) > 0.004 && Math.abs(dx) < 0.16 && c.lowestTipY() < b.top() + 0.07) b.vel.x += dx * k * dt;
+    }
+
+    // take-overs, latest first
+    if (left <= ASSIST.guaranteeBy) return this.startSuccess(true);
+    if (left <= ASSIST.rescueAt && (!this.auto || this.auto.phase !== 'lift' || this.state !== 'held')) {
+      if (!this.auto || this.auto.phase !== 'rescue') this.startRescue();
+    } else if (!this.auto) {
+      if (left <= ASSIST.autoLiftAt && this.state === 'held') this.auto = { phase: 'lift', t: 0 };
+      else if (left <= ASSIST.autoAt && this.state === 'free') this.auto = { phase: 'ready', t: 0, still: 0 };
+    }
+    if (this.auto) this.runAuto(dt);
+  }
+
+  // The ball comes over by itself and lets the claw catch it.
+  runAuto(dt) {
+    const c = this.claw;
+    const b = this.ball;
+    const A = this.auto;
+    A.t += dt;
+    const resting = b.grounded && Math.abs(b.vel.y) < 0.12 && b.bottom() < 0.012;
+    A.still = resting ? (A.still || 0) + dt : 0;
+    switch (A.phase) {
+      case 'ready': // open up and hover above the ball's height
+        c.closed = false;
+        c.target.y = Math.max(c.pos.y, 0.42);
+        if (c.aUser < 0.02 && c.pos.y > 0.38 && this.state === 'free') this.next('approach');
+        break;
+      case 'approach': {
+        // little hops toward the spot under the claw
+        const dx = c.pos.x - b.pos.x;
+        if (A.still < 0.08 || this.ghost > 0) break;
+        if (Math.abs(dx) < 0.014) {
+          this.next('descend');
+          break;
+        }
+        b.vel.y = ASSIST.hopSpeed;
+        b.vel.x = THREE.MathUtils.clamp(dx / 0.3, -0.5, 0.5);
+        b.grounded = false;
+        b.kick(0.45, Math.sign(dx) * 0.2);
+        A.still = 0;
+        break;
+      }
+      case 'descend':
+        c.target.x = THREE.MathUtils.lerp(c.target.x, b.pos.x, Math.min(1, dt * 4));
+        c.target.y = 0;
+        if (A.t > 0.25 && Math.abs(c.vel.y) < 0.02) this.next('close');
+        break;
+      case 'close':
+        c.closed = true;
+        if (this.state === 'held') this.next('lift');
+        else if (this.state === 'free' && A.t > 1.1) this.next('ready'); // squirted out: try again
+        break;
+      case 'lift':
+        c.closed = true;
+        c.target.y = CLAW.yMax;
+        if (this.state === 'free') this.next('ready');
+        break;
+      case 'rescue': {
+        // the ball jumps up into the claw, which carries it up over the line
+        const s = Math.min(1, A.t / 0.55);
+        const e = s * s * (3 - 2 * s);
+        this.rel.lerpVectors(A.from, A.goal, e);
+        c.target.y = CLAW.yMax;
+        break;
+      }
+    }
+  }
+
+  next(phase) {
+    this.auto.phase = phase;
+    this.auto.t = 0;
+    this.auto.still = 0;
+  }
+
+  startRescue() {
+    const c = this.claw;
+    const b = this.ball;
+    if (this.state === 'grip' || this.state === 'held') {
+      // already in the claw: just carry it up, a little quicker
+      this.outcome = 'success';
+      this.auto = { phase: 'lift', t: 0 };
+      c.speedScale = 1.8;
+      return;
+    }
+    this.state = 'held';
+    this.outcome = 'success';
+    this.t = 0;
+    this.depth = GRIP.holdDepth.success;
+    this.grabBottom = b.bottom();
+    this.lag.set(0, 0, 0);
+    this.lagV.set(0, 0, 0);
+    this.sag = 0;
+    this.ghost = 0;
+    b.vel.set(0, 0, 0);
+    b.omega.set(0, 0, 0);
+    b.kick(0.6, 0.2);
+    c.closed = true;
+    c.speedScale = 1.8;
+    this.auto = { phase: 'rescue', t: 0, from: b.pos.clone().sub(c.pos), goal: new THREE.Vector3(0, GRIP.settledRelY + 0.004, 0) };
   }
 
   // "Missed me!": the ball bounces around a little, as if teasing the player.

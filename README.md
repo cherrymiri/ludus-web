@@ -30,6 +30,14 @@ Node.js 20.19 이상이 필요합니다.
 
 상태: 대기(idle) → 플레이(play) → 성공(won) / 실패(missed) → 대기. 결과는 한 번만 확정되고 바뀌지 않습니다.
 
+**두 번째 기회** — "Missed me!" 다음 판은 남은 시간에 따라 조용히 쉬워지고 반드시 성공으로 끝납니다.
+- 60–31초: 잘 잡히고 덜 미끄러지며, 중심이 조금 어긋나도 잡힘 (그래도 튕겨 나갈 수 있음)
+- 30–16초: 제대로 잡은 공은 떨어지지 않고, 미끄러지던 공도 다시 붙잡힘. 내려온 집게 쪽으로 공이 살짝 굴러감
+- 11초: 아직 못 잡았다면 공이 통통 뛰어 집게 아래로 오고, 집게가 내려와 잡아 올림 (9초: 잡고만 있으면 집게가 들어 올림)
+- 6.2초 / 5초: 비상 보조 (시뮬레이션에서는 도달하지 않음)
+
+이 판을 이긴 뒤(또는 첫 판에서 이긴 뒤, 새로고침 시) 다시 일반 난이도로 시작합니다.
+
 ## 배포 (GitHub → Vercel)
 
 1. GitHub에 새 저장소(예: `ludus`)를 만들고 이 폴더를 올립니다.
@@ -86,6 +94,11 @@ tools/export_glb.py       .blend → GLB 변환 스크립트 (원본 .blend는 �
 - `TIMER.pulseFrom`, `TIMER.urgentFrom` — 은은한 맥동(15초), 빠른 맥동(5초)이 시작되는 시점
 - `MISS.hops` — 시간 초과 후 공이 놀리듯 튀는 높이(속도)와 횟수
 - `MISS.textDelay`, `MISS.buttonDelay` — "Missed me!"와 버튼이 나타나는 시점
+
+두 번째 기회 (`ASSIST`)
+- `ASSIST.tier1` — 60–31초 구간의 결과 확률
+- `ASSIST.tolerance`, `ASSIST.magnet` — 구간별 중심 허용 오차, 공이 집게 쪽으로 굴러가는 정도
+- `ASSIST.autoAt`, `ASSIST.autoLiftAt`, `ASSIST.rescueAt`, `ASSIST.guaranteeBy` — 자동 보조 시점
 
 움직임 / 화면
 - `CLAW` — 집게 반응 속도, 휠 감도, 이동 범위
