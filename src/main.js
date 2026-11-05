@@ -8,7 +8,7 @@ import { Game } from './game.js';
 import { Hud } from './hud.js';
 import { bindInput } from './input.js';
 import { bindTouch } from './touch.js';
-import { CLAW } from './config.js';
+import { Timer } from './timer.js';
 import './style.css';
 
 const container = document.getElementById('stage');
@@ -35,22 +35,51 @@ const onLoaded = (gltf) => {
     bindInput({ canvas: renderer.domElement, camera, claw, game });
     const touch = bindTouch({ canvas: renderer.domElement, camera, claw, game });
 
-    // start: claw hovering above the ball
-    claw.reset(CLAW.startY);
+    const timer = new Timer(document.getElementById('timer'));
 
-    // "다시 잡아볼래?" — fade out, reset the scene in place (no reload, no re-download), fade in
+    // real clock for the countdown (tests can swap in a virtual one, see __LUDUS)
+    let virtualNow = null;
+    const nowMs = () => virtualNow ?? performance.now();
+    let lastNow = nowMs();
+
+    // waiting screen: claw hovering above the ball, timer at 01:00, controls locked
+    game.reset();
+    hud.startWorldY = (claw.lowestTipY() + ball.top()) / 2;
+    hud.ballTopWorldY = ball.top();
+
+    const syncMode = () => {
+      const m = game.mode;
+      if (document.body.dataset.mode !== m) document.body.dataset.mode = m;
+    };
+    syncMode();
+
+    // "시작하기" — the 60 s countdown starts only here
+    const startBtn = document.getElementById('start');
+    startBtn.addEventListener('click', () => {
+      if (!game.start()) return;
+      const now = nowMs();
+      timer.start(now);
+      lastNow = now;
+      startBtn.blur();
+      syncMode();
+    });
+
+    // "다시 잡아볼래?" — fade out, reset the scene in place (no reload, no re-download),
+    // fade back in to the waiting screen. The timer waits for 시작하기 again.
     const retry = document.getElementById('retry');
     let resetTimer = 0;
     retry.addEventListener('click', () => {
-      if (game.state !== 'success' || game.resetting) return;
+      if ((game.mode !== 'won' && game.mode !== 'missed') || game.resetting) return;
       game.resetting = true;
       hud.leave();
       document.body.classList.add('is-resetting');
       clearTimeout(resetTimer);
       resetTimer = setTimeout(() => {
         game.reset();
+        timer.reset();
         hud.clear();
         touch.sync();
+        syncMode();
         document.body.classList.remove('is-resetting');
         game.resetting = false;
       }, 420);
@@ -84,7 +113,25 @@ const onLoaded = (gltf) => {
     let paused = false;
     const frame = (dt, render = true) => {
       checkSize();
-      game.update(dt);
+      const now = nowMs();
+      if (game.mode === 'play' && timer.running && now >= timer.deadline) {
+        // Time ran out during this frame: first simulate up to the deadline, so a
+        // success reached before it still counts; then the result is fixed.
+        const pre = THREE.MathUtils.clamp((timer.deadline - lastNow) / 1000, 0, dt);
+        if (pre > 0) game.update(pre);
+        if (game.mode === 'won') timer.stop(lastNow + pre * 1000, 'won');
+        else {
+          game.timeout();
+          timer.stop(timer.deadline, 'missed');
+        }
+        if (dt - pre > 0) game.update(dt - pre);
+      } else {
+        game.update(dt);
+        if (game.mode === 'won') timer.stop(now, 'won');
+      }
+      lastNow = now;
+      timer.render(now);
+      syncMode();
       hud.update(game);
       touch.sync();
       coreU.uTime.value += dt;
@@ -106,10 +153,24 @@ const onLoaded = (gltf) => {
       claw,
       ball,
       camera,
+      timer,
+      hud,
       force: (o) => (game.forced = o || null),
-      pause: (v = true) => (paused = v),
+      // paused: frames only advance through step(), on a virtual clock
+      pause: (v = true) => {
+        paused = v;
+        virtualNow = v ? nowMs() : null;
+        lastNow = nowMs();
+      },
       step: (frames = 1, dt = 1 / 60, render = true) => {
-        for (let i = 0; i < frames; i++) frame(dt, render && i === frames - 1);
+        for (let i = 0; i < frames; i++) {
+          if (virtualNow !== null) virtualNow += dt * 1000;
+          frame(dt, render && i === frames - 1);
+        }
+      },
+      // jump the running countdown to a given number of seconds left
+      setRemaining: (s) => {
+        if (timer.running) timer.deadline = nowMs() + s * 1000;
       },
     };
     document.body.classList.add('is-ready');

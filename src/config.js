@@ -70,6 +70,24 @@ export const SUCCESS = {
   buttonDelay: 1.4, // s before "다시 잡아볼래?" appears
 };
 
+// ── TIME ATTACK ──────────────────────────────────────────────
+
+export const TIMER = {
+  duration: 60, // s, counted on the real clock from "시작하기"
+  pulseFrom: 15, // ≤ 15 s: soft mint pulse once per second
+  urgentFrom: 5, // ≤ 5 s: faster, brighter pulse (twice per second)
+};
+
+// time-out: the ball is let go and teases the player with a few bouncy hops
+export const MISS = {
+  firstHopAt: 0.35, // s after time-out, earliest first hop
+  settle: 0.12, // s the ball must rest on the floor before each hop
+  hops: [0.66, 0.46, 0.3], // take-off speeds (m/s) of the teasing hops
+  hopSide: 0.07, // little side-to-side shimmy per hop (m/s)
+  textDelay: 0.95, // s after time-out before "Missed me!" appears
+  buttonDelay: 1.9, // s before "다시 잡아볼래?" appears
+};
+
 // ── BALL MATERIAL (transparency) ─────────────────────────────
 
 export const ORB = {

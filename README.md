@@ -22,7 +22,13 @@ Node.js 20.19 이상이 필요합니다.
 | 상하 이동 | 휠 ↓ / 휠 ↑ (페이지는 스크롤되지 않음) | 오른쪽 세로 슬라이더 |
 | 잡기 / 놓기 | 좌클릭 (토글) | 하단 잡기 버튼 (토글) |
 
-성공하면 "Okay, you win!"과 함께 "다시 잡아볼래?" 버튼이 나타나며, 누르면 새로고침 없이 처음 상태로 돌아갑니다.
+처음에는 대기 화면입니다. **시작하기**를 눌러야 60초 카운트다운이 시작되고 집게를 조작할 수 있습니다.
+
+- 60초 안에 공을 성공선 위까지 들어 올리면 → "Okay, you win!" (타이머는 그 순간 멈춤)
+- 시간이 끝나면 → 집게가 공을 놓고, 공이 통통 튀며 "Missed me!"
+- 어느 쪽이든 "다시 잡아볼래?"를 누르면 새로고침 없이 대기 화면으로 돌아가며, 다시 **시작하기**를 눌러야 타이머가 시작됩니다.
+
+상태: 대기(idle) → 플레이(play) → 성공(won) / 실패(missed) → 대기. 결과는 한 번만 확정되고 바뀌지 않습니다.
 
 ## 배포 (GitHub → Vercel)
 
@@ -51,7 +57,8 @@ src/ball.js               공의 메시 변형(눌림·부피 보존·젤리 흔
 src/game.js               잡기 판정, 4가지 결과(A–D), 미끄러짐, 성공 판정, 연속 실패 보정
 src/materials.js          크롬 / 새틴 팁 / 젤 공(볼륨 셰이더 + 광택 스킨)
 src/stage.js              카메라, 스튜디오 반사 환경, 조명
-src/hud.js                성공선, 성공 화면(Okay, you win!) 연출
+src/hud.js                성공선, 결과 화면(Okay, you win! / Missed me!) 연출
+src/timer.js              60초 카운트다운 표시와 맥동 효과
 src/input.js, touch.js    마우스 입력 / 모바일 드래그·슬라이더·잡기 버튼
 tools/export_glb.py       .blend → GLB 변환 스크립트 (원본 .blend는 수정하지 않음)
 ```
@@ -73,6 +80,12 @@ tools/export_glb.py       .blend → GLB 변환 스크립트 (원본 .blend는 �
 - `ORB.density` — 전체 젤리 밀도 (낮을수록 투명)
 - `ORB.clearCore` — 중심부 투명도 (높을수록 가운데가 맑음)
 - `ORB.rimGlow` — 가장자리 민트·아이스블루 밝기
+
+제한시간 (`TIMER`, `MISS`)
+- `TIMER.duration` — 제한시간(초, 실제 시계 기준)
+- `TIMER.pulseFrom`, `TIMER.urgentFrom` — 은은한 맥동(15초), 빠른 맥동(5초)이 시작되는 시점
+- `MISS.hops` — 시간 초과 후 공이 놀리듯 튀는 높이(속도)와 횟수
+- `MISS.textDelay`, `MISS.buttonDelay` — "Missed me!"와 버튼이 나타나는 시점
 
 움직임 / 화면
 - `CLAW` — 집게 반응 속도, 휠 감도, 이동 범위

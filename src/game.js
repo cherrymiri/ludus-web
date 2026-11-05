@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { OUTCOMES, PITY, ALIGNMENT_INFLUENCE, GRIP, HOLD, VARIATION, SUCCESS, CLAW } from './config.js';
+import { OUTCOMES, PITY, ALIGNMENT_INFLUENCE, GRIP, HOLD, VARIATION, SUCCESS, CLAW, MISS } from './config.js';
 
 const rand = ([a, b]) => a + Math.random() * (b - a);
 const sign = () => (Math.random() < 0.5 ? -1 : 1);
@@ -12,7 +12,8 @@ const _v = new THREE.Vector3();
 const _n = new THREE.Vector3();
 const _acc = new THREE.Vector3();
 
-// States: free → grip → (pop → free) | held → (slip → free) | success (stays until reset())
+// Session (mode): idle → play → won | missed → (reset) idle
+// Ball states:    free → grip → (pop → free) | held → (slip → free) | success (stays until reset())
 export class Game {
   constructor({ claw, ball, hud }) {
     this.claw = claw;
@@ -35,15 +36,42 @@ export class Game {
     this.sag = 0;
     this.successCount = 0;
     this.resetting = false;
+    this.mode = 'idle'; // idle · play · won · missed
+    this.endT = 0; // s since won / missed
+    this.tease = null;
   }
 
-  // No claw control while the win screen is up (or while resetting).
+  // Claw can only be driven while playing (not before 시작하기, not after the result).
   get locked() {
-    return this.state === 'success' || this.resetting;
+    return this.mode !== 'play' || this.state === 'success' || this.resetting;
+  }
+
+  start() {
+    if (this.mode !== 'idle' || this.resetting) return false;
+    this.mode = 'play';
+    return true;
+  }
+
+  // Time is up: the result is fixed as missed, whatever happens next.
+  timeout() {
+    if (this.mode !== 'play') return false;
+    this.mode = 'missed';
+    this.endT = 0;
+    this.tease = { hops: 0, still: 0, shimmy: false, side: Math.random() < 0.5 ? -1 : 1 };
+    const c = this.claw;
+    c.closed = false;
+    if (this.holding) this.release('opened');
+    // the claw lets go and backs off to just above the success line,
+    // leaving the middle of the screen (and the ball) free
+    c.target.set(c.pos.x, Math.min(CLAW.yMax - 0.02, SUCCESS.lineY + 0.04 - c.lowestOffset));
+    return true;
   }
 
   // Back to a fresh attempt without reloading anything.
   reset() {
+    this.mode = 'idle';
+    this.endT = 0;
+    this.tease = null;
     this.state = 'free';
     this.outcome = null;
     this.p = {};
@@ -211,6 +239,8 @@ export class Game {
     // 4. state logic
     if (this.state === 'free') this.updateFree(dt);
     else this[`update_${this.state}`](dt);
+    if (this.mode === 'won') this.endT += dt;
+    else if (this.mode === 'missed') this.updateMissed(dt);
 
     // 5. deformation
     this.collectDents();
@@ -370,8 +400,10 @@ export class Game {
   }
 
   startSuccess() {
-    if (this.state === 'success') return; // judged once
+    if (this.state === 'success' || this.mode !== 'play') return; // judged once, only in time
     this.state = 'success';
+    this.mode = 'won';
+    this.endT = 0;
     this.successCount++;
     this.t = 0;
     this.fails = 0;
@@ -403,6 +435,29 @@ export class Game {
     }
     this.rel.y = this.hopBase + Math.max(0, hop);
     this.ball.glow = Math.max(this.ball.glow, 0.35 + 0.25 * Math.sin(this.t * 2.2));
+  }
+
+  // "Missed me!": the ball bounces around a little, as if teasing the player.
+  updateMissed(dt) {
+    this.endT += dt;
+    const b = this.ball;
+    const T = this.tease;
+    if (!T || this.state !== 'free') return;
+    const resting = b.grounded && Math.abs(b.vel.y) < 0.12 && b.bottom() < 0.012;
+    T.still = resting ? T.still + dt : 0;
+    if (T.hops < MISS.hops.length) {
+      if (this.endT < MISS.firstHopAt || T.still < MISS.settle) return;
+      const dir = T.hops % 2 ? -T.side : T.side;
+      b.vel.y = MISS.hops[T.hops];
+      b.vel.x += dir * MISS.hopSide;
+      b.grounded = false;
+      b.kick(0.55 * (1 - T.hops * 0.25), dir * 0.28);
+      T.hops++;
+      T.still = 0;
+    } else if (!T.shimmy && T.still >= 0.1) {
+      T.shimmy = true; // a last little wiggle
+      b.kick(0.1, T.side * 0.55);
+    }
   }
 
   collectDents() {

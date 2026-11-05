@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Sans+KR:wght@300;400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&family=Noto+Sans+KR:wght@300;400&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -24,6 +24,9 @@
       <h1>LUDUS</h1>
       <span class="rule"></span>
       <p>가벼운 장난과 설렘을 즐기는 사랑</p>
+      <div id="timer" data-state="idle" role="timer" aria-label="남은 시간">
+        <span class="timer-digits">01:00</span>
+      </div>
     </header>
 
     <div id="success-line" aria-hidden="true">
@@ -111,12 +114,15 @@
       </button>
     </div>
 
-    <!-- success -->
+    <button id="start" type="button">시작하기</button>
+
+    <!-- result: success / time-out -->
     <div id="win" role="status" aria-live="polite">
       <div class="win-sparks" aria-hidden="true">
         <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
       </div>
       <p class="win-text">Okay, you win!</p>
+      <p class="miss-text">Missed me!</p>
       <button id="retry" type="button" tabindex="-1">다시 잡아볼래?</button>
     </div>
 
