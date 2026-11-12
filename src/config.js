@@ -68,7 +68,7 @@ export const SUCCESS = {
   bounceHeight: 0.014, // happy hops of the ball inside the claw
   bounceCount: 2,
   textDelay: 0.55, // s after reaching the line before "Okay, you win!" appears
-  buttonDelay: 1.4, // s before "다시 잡아볼래?" appears
+  endingDelay: 1.75, // s: the common lyrics ending fades in (~1 s after the text)
 };
 
 // ── TIME ATTACK ──────────────────────────────────────────────
@@ -86,7 +86,7 @@ export const MISS = {
   hops: [0.66, 0.46, 0.3], // take-off speeds (m/s) of the teasing hops
   hopSide: 0.07, // little side-to-side shimmy per hop (m/s)
   textDelay: 0.95, // s after time-out before "Missed me!" appears
-  buttonDelay: 2.35, // s before "다시 잡아볼래?" appears (right after the lyrics and credit)
+  endingDelay: 2.1, // s: the common lyrics ending fades in (~1 s after the text)
 };
 
 // ── SECOND CHANCE (after a time-out) ─────────────────────────

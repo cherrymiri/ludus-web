@@ -10,6 +10,10 @@
     <meta name="description" content="LUDUS — 가벼운 장난과 설렘을 즐기는 사랑" />
     <meta name="theme-color" content="#000000" />
     <link rel="icon" href="data:," />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -17,7 +21,7 @@
       rel="stylesheet"
     />
   </head>
-  <body>
+  <body class="phase-opening">
     <div id="stage" aria-label="LUDUS interactive claw"></div>
 
     <header class="title">
@@ -114,8 +118,6 @@
       </button>
     </div>
 
-    <button id="start" type="button">시작하기</button>
-
     <!-- result: success / time-out -->
     <div id="win" role="status" aria-live="polite">
       <div class="win-sparks" aria-hidden="true">
@@ -123,19 +125,42 @@
       </div>
       <p class="win-text">Okay, you win!</p>
       <p class="miss-text">Missed me!</p>
-      <!--
-        실패 엔딩 가사: 아래 두 <span> 사이에 가사를 한 줄씩 넣어 주세요.
-        두 줄이 모두 채워져야 가사와 출처 표기가 나타납니다.
-      -->
-      <div class="miss-verse">
-        <p class="miss-lyrics">
-          <span class="lyric-line">내 맘을 누가 가지려고 손을 뻗을 때 </span>
-          <span class="lyric-line">난 달아나고 싶어져 꼭 찾을 수 없게</span>
-        </p>
-        <p class="miss-credit">Inspired by lyrics from "Lay Low" by YooA (OH MY GIRL)</p>
-      </div>
-      <button id="retry" type="button" tabindex="-1">다시 잡아볼래?</button>
     </div>
+
+    <!-- common ending (after "Okay, you win!" or "Missed me!") -->
+    <section id="ending" aria-label="LUDUS 엔딩" hidden>
+      <div class="en-inner">
+        <p class="en-lyrics">
+          <span class="ln ln0"><span class="tx">내 맘을 누가 가지려고 손을 뻗을 때</span></span>
+          <span class="ln ln1"><span class="tx">난 달아나고 싶어져 꼭 찾을 수 없게</span></span>
+        </p>
+        <p class="en-credit">Inspired by lyrics from "Lay Low" by YooA (OH MY GIRL)</p>
+        <button id="replay" class="en-btn" type="button">다시 체험하기</button>
+      </div>
+    </section>
+
+    <!-- opening -->
+    <section id="opening" aria-label="LUDUS 오프닝">
+      <div class="op-inner">
+        <p class="op-kicker">WHEN LOVE RESPONDS</p>
+        <h1 class="op-title">LUDUS</h1>
+        <p class="op-sub">장난스러운 사랑</p>
+        <i class="op-rule" aria-hidden="true"></i>
+        <p class="op-desc">
+          다가가면 달아나고, 멀어지면 다시 붙잡고 싶어집니다.<br />
+          LUDUS는 서로를 놀리듯 밀고 당기는 장난스러운 사랑입니다.
+        </p>
+        <p class="op-guide">집게로 공을 잡아 성공선 위까지 들어 올려 보세요.</p>
+        <button id="op-start" class="op-btn" type="button">체험 시작하기</button>
+      </div>
+    </section>
+
+    <!-- re-enter fullscreen (shown after ESC) -->
+    <button id="fsbtn" class="fsbtn" type="button" aria-label="전체화면" title="전체화면" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+      </svg>
+    </button>
 
     <div id="loading">LOADING</div>
     <script type="module" src="/src/main.js"></script>

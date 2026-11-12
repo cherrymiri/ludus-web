@@ -10,9 +10,40 @@ import { bindInput } from './input.js';
 import { bindTouch } from './touch.js';
 import { Timer } from './timer.js';
 import { CLAW } from './config.js';
+import { enterFullscreen, fsSupported, isFullscreen, onFullscreenChange } from './fullscreen.js';
 import './style.css';
 
 const container = document.getElementById('stage');
+
+// ── opening & fullscreen (bound right away, before the model has loaded) ──
+const opening = document.getElementById('opening');
+const fsBtn = document.getElementById('fsbtn');
+const skipOpening = new URLSearchParams(location.search).has('skip'); // dev / tests
+let startPlay = null; // set once the scene is ready
+let startWanted = false;
+const syncFsButton = () => {
+  fsBtn.hidden = !fsSupported() || isFullscreen() || document.body.classList.contains('phase-opening');
+};
+onFullscreenChange(syncFsButton);
+fsBtn.addEventListener('click', () => enterFullscreen());
+const closeOpening = () => {
+  document.body.classList.remove('phase-opening');
+  opening.classList.add('closing');
+  setTimeout(() => (opening.hidden = true), 900);
+  syncFsButton();
+};
+document.getElementById('op-start').addEventListener('click', (e) => {
+  e.currentTarget.disabled = true;
+  enterFullscreen(); // inside the click: Chrome hides tabs and address bar
+  closeOpening();
+  // the scene fades in, then the countdown starts
+  setTimeout(() => (startPlay ? startPlay() : (startWanted = true)), 1100);
+});
+if (skipOpening) {
+  opening.hidden = true;
+  document.body.classList.remove('phase-opening');
+}
+syncFsButton();
 const { renderer, scene, camera, resize } = createStage(container);
 
 const loader = new GLTFLoader();
@@ -43,7 +74,7 @@ const onLoaded = (gltf) => {
     const nowMs = () => virtualNow ?? performance.now();
     let lastNow = nowMs();
 
-    // waiting screen: claw hovering above the ball, timer at 00:45, controls locked
+    // waiting state: claw hovering above the ball, timer full, controls locked
     game.reset();
     hud.startWorldY = (claw.lowestTipY() + ball.top()) / 2;
     hud.ballTopWorldY = ball.top();
@@ -55,39 +86,57 @@ const onLoaded = (gltf) => {
     };
     syncMode();
 
-    // "시작하기" — the countdown starts only here
-    const startBtn = document.getElementById('start');
-    startBtn.addEventListener('click', () => {
-      if (!game.start()) return;
+    // the countdown starts when the opening closes (and again after 다시 체험하기)
+    startPlay = () => {
+      if (!game.start()) return false;
       const now = nowMs();
       timer.start(now);
       lastNow = now;
-      startBtn.blur();
       syncMode();
-    });
+      return true;
+    };
+    if (startWanted) startPlay();
 
-    // "다시 잡아볼래?" — fade out, reset the scene in place (no reload, no re-download),
-    // fade back in to the waiting screen. The timer waits for 시작하기 again.
-    const retry = document.getElementById('retry');
-    let resetTimer = 0;
-    retry.addEventListener('click', () => {
-      if ((game.mode !== 'won' && game.mode !== 'missed') || game.resetting) return;
+    // common ending: same lyrics screen after either result
+    const ending = document.getElementById('ending');
+    const replay = document.getElementById('replay');
+    let endingTimers = [];
+    hud.onEnding = () => {
+      ending.classList.remove('is-leaving');
+      ending.hidden = false; // display → restarts all CSS animations from the top
+      document.body.classList.add('is-ending');
+      replay.tabIndex = 0;
+    };
+
+    // "다시 체험하기" — straight back into a fresh round (no opening, no reload).
+    // The scene is reset behind the ending, which then fades away, and the countdown restarts.
+    replay.addEventListener('click', () => {
+      if ((game.mode !== 'won' && game.mode !== 'missed') || game.resetting || ending.hidden) return;
+      if (fsSupported() && !isFullscreen()) enterFullscreen(); // stay immersive
       // a time-out earns a second chance; after any win it is back to normal difficulty
       const secondChance = game.mode === 'missed' && !game.assist;
       game.resetting = true;
-      hud.leave();
-      document.body.classList.add('is-resetting');
-      clearTimeout(resetTimer);
-      resetTimer = setTimeout(() => {
-        game.reset();
-        game.assist = secondChance;
-        timer.reset();
-        hud.clear();
-        touch.sync();
-        syncMode();
-        document.body.classList.remove('is-resetting');
-        game.resetting = false;
-      }, 420);
+      replay.blur();
+      replay.tabIndex = -1;
+      endingTimers.forEach(clearTimeout);
+      game.reset();
+      game.assist = secondChance;
+      timer.reset();
+      hud.clear();
+      touch.sync();
+      syncMode();
+      document.body.classList.remove('is-ending');
+      ending.classList.add('is-leaving');
+      endingTimers = [
+        setTimeout(() => {
+          ending.hidden = true;
+          ending.classList.remove('is-leaving');
+        }, 700),
+        setTimeout(() => {
+          game.resetting = false;
+          startPlay();
+        }, 750),
+      ];
     });
 
     // Keep the 3D view matched to the real screen size. Mobile browsers (iOS Safari
@@ -162,6 +211,7 @@ const onLoaded = (gltf) => {
       camera,
       timer,
       hud,
+      startPlay: () => startPlay(),
       force: (o) => (game.forced = o || null),
       // paused: frames only advance through step(), on a virtual clock
       pause: (v = true) => {

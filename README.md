@@ -22,17 +22,14 @@ Node.js 20.19 이상이 필요합니다.
 | 상하 이동 | 휠 ↓ / 휠 ↑ (페이지는 스크롤되지 않음) | 오른쪽 세로 슬라이더 |
 | 잡기 / 놓기 | 좌클릭 (토글) | 하단 잡기 버튼 (토글) |
 
-처음에는 대기 화면입니다. **시작하기**를 눌러야 45초 카운트다운이 시작되고 집게를 조작할 수 있습니다.
+흐름: **오프닝** → "체험 시작하기"(전체화면 진입, 바로 카운트다운 시작) → 플레이 → 결과 문구("Okay, you win!" / "Missed me!")
+→ 약 1초 뒤 **공통 가사 엔딩** → "다시 체험하기"(오프닝 없이 즉시 새 판, 전체화면 유지).
 
-- 45초 안에 공을 성공선 위까지 들어 올리면 → "Okay, you win!" (타이머는 그 순간 멈춤)
-- 시간이 끝나면 → 집게가 공을 놓고, 공이 통통 튀며 "Missed me!"
-- 어느 쪽이든 "다시 잡아볼래?"를 누르면 새로고침 없이 대기 화면으로 돌아가며, 다시 **시작하기**를 눌러야 타이머가 시작됩니다.
+- ESC로 전체화면을 빠져나오면 왼쪽 아래에 작은 전체화면 아이콘이 나타나며, 게임은 그대로 이어집니다.
+- 엔딩 가사·출처는 `index.html`의 `#ending` 안에 있습니다.
+- 주소 끝에 `?skip`을 붙이면 오프닝 없이 열립니다(개발·테스트용, 카운트다운은 시작하지 않음).
 
 상태: 대기(idle) → 플레이(play) → 성공(won) / 실패(missed) → 대기. 결과는 한 번만 확정되고 바뀌지 않습니다.
-
-**실패 엔딩 가사** — "Missed me!" 아래에 가사 두 줄과 출처 표기가 나타납니다.
-가사는 `index.html`의 `miss-verse` 안 두 `<span class="lyric-line"></span>` 사이에 한 줄씩 직접 넣습니다.
-두 줄이 모두 채워져 있어야 가사와 출처가 보이며, 비어 있으면 둘 다 숨겨집니다.
 
 **두 번째 기회** — "Missed me!" 다음 판은 남은 시간에 따라 조용히 쉬워지고 반드시 성공으로 끝납니다.
 - 45–31초: 잘 잡히고 덜 미끄러지며, 중심이 조금 어긋나도 잡힘 (그래도 튕겨 나갈 수 있음)
@@ -69,7 +66,8 @@ src/ball.js               공의 메시 변형(눌림·부피 보존·젤리 흔
 src/game.js               잡기 판정, 4가지 결과(A–D), 미끄러짐, 성공 판정, 연속 실패 보정
 src/materials.js          크롬 / 새틴 팁 / 젤 공(볼륨 셰이더 + 광택 스킨)
 src/stage.js              카메라, 스튜디오 반사 환경, 조명
-src/hud.js                성공선, 결과 화면(Okay, you win! / Missed me!) 연출
+src/hud.js                성공선, 결과 문구 → 공통 엔딩 전환
+src/fullscreen.js         전체화면 진입·감지
 src/timer.js              45초 카운트다운 표시와 맥동 효과
 src/input.js, touch.js    마우스 입력 / 모바일 드래그·슬라이더·잡기 버튼
 tools/export_glb.py       .blend → GLB 변환 스크립트 (원본 .blend는 수정하지 않음)
@@ -86,7 +84,7 @@ tools/export_glb.py       .blend → GLB 변환 스크립트 (원본 .blend는 �
 
 성공
 - `SUCCESS.lineY` — 성공선 높이 (공 전체가 이 선 위로 올라가야 성공)
-- `SUCCESS.textDelay`, `SUCCESS.buttonDelay` — 문구·버튼이 나타나는 시점
+- `SUCCESS.textDelay`, `SUCCESS.endingDelay` — 문구와 공통 엔딩이 나타나는 시점
 
 공 재질
 - `ORB.density` — 전체 젤리 밀도 (낮을수록 투명)
@@ -97,7 +95,7 @@ tools/export_glb.py       .blend → GLB 변환 스크립트 (원본 .blend는 �
 - `TIMER.duration` — 제한시간(초, 실제 시계 기준)
 - `TIMER.pulseFrom`, `TIMER.urgentFrom` — 은은한 맥동(15초), 빠른 맥동(5초)이 시작되는 시점
 - `MISS.hops` — 시간 초과 후 공이 놀리듯 튀는 높이(속도)와 횟수
-- `MISS.textDelay`, `MISS.buttonDelay` — "Missed me!"와 버튼이 나타나는 시점
+- `MISS.textDelay`, `MISS.endingDelay` — "Missed me!"와 공통 엔딩이 나타나는 시점
 
 두 번째 기회 (`ASSIST`)
 - `ASSIST.tier1` — 45–31초 구간의 결과 확률
