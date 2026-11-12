@@ -22,11 +22,11 @@ Node.js 20.19 이상이 필요합니다.
 | 상하 이동 | 휠 ↓ / 휠 ↑ (페이지는 스크롤되지 않음) | 오른쪽 세로 슬라이더 |
 | 잡기 / 놓기 | 좌클릭 (토글) | 하단 잡기 버튼 (토글) |
 
-흐름: **오프닝** → "체험 시작하기"(전체화면 진입, 바로 카운트다운 시작) → 플레이 → 결과 문구("Okay, you win!" / "Missed me!")
-→ 약 1초 뒤 **공통 가사 엔딩** → "다시 체험하기"(오프닝 없이 즉시 새 판, 전체화면 유지).
+흐름: **오프닝** → "체험 시작하기"(전체화면 진입, 바로 카운트다운 시작) → 플레이 → 결과 화면
+("Okay, you win!" 또는 "Missed me!" → 작은 가사 2줄 → 출처 → "다시 잡아볼래?") → 오프닝 없이 즉시 새 판(전체화면 유지).
 
 - ESC로 전체화면을 빠져나오면 왼쪽 아래에 작은 전체화면 아이콘이 나타나며, 게임은 그대로 이어집니다.
-- 엔딩 가사·출처는 `index.html`의 `#ending` 안에 있습니다.
+- 가사·출처는 `index.html`의 `#win` 안 `.verse`에 있으며 성공·실패 엔딩에 함께 쓰입니다.
 - 주소 끝에 `?skip`을 붙이면 오프닝 없이 열립니다(개발·테스트용, 카운트다운은 시작하지 않음).
 
 상태: 대기(idle) → 플레이(play) → 성공(won) / 실패(missed) → 대기. 결과는 한 번만 확정되고 바뀌지 않습니다.
@@ -66,7 +66,7 @@ src/ball.js               공의 메시 변형(눌림·부피 보존·젤리 흔
 src/game.js               잡기 판정, 4가지 결과(A–D), 미끄러짐, 성공 판정, 연속 실패 보정
 src/materials.js          크롬 / 새틴 팁 / 젤 공(볼륨 셰이더 + 광택 스킨)
 src/stage.js              카메라, 스튜디오 반사 환경, 조명
-src/hud.js                성공선, 결과 문구 → 공통 엔딩 전환
+src/hud.js                성공선, 결과 화면(문구 → 가사 → 다시 잡아볼래?) 연출
 src/fullscreen.js         전체화면 진입·감지
 src/timer.js              45초 카운트다운 표시와 맥동 효과
 src/input.js, touch.js    마우스 입력 / 모바일 드래그·슬라이더·잡기 버튼
@@ -84,7 +84,7 @@ tools/export_glb.py       .blend → GLB 변환 스크립트 (원본 .blend는 �
 
 성공
 - `SUCCESS.lineY` — 성공선 높이 (공 전체가 이 선 위로 올라가야 성공)
-- `SUCCESS.textDelay`, `SUCCESS.endingDelay` — 문구와 공통 엔딩이 나타나는 시점
+- `SUCCESS.textDelay`, `SUCCESS.buttonDelay` — 문구와 버튼이 나타나는 시점
 
 공 재질
 - `ORB.density` — 전체 젤리 밀도 (낮을수록 투명)
@@ -95,7 +95,7 @@ tools/export_glb.py       .blend → GLB 변환 스크립트 (원본 .blend는 �
 - `TIMER.duration` — 제한시간(초, 실제 시계 기준)
 - `TIMER.pulseFrom`, `TIMER.urgentFrom` — 은은한 맥동(15초), 빠른 맥동(5초)이 시작되는 시점
 - `MISS.hops` — 시간 초과 후 공이 놀리듯 튀는 높이(속도)와 횟수
-- `MISS.textDelay`, `MISS.endingDelay` — "Missed me!"와 공통 엔딩이 나타나는 시점
+- `MISS.textDelay`, `MISS.buttonDelay` — "Missed me!"와 버튼이 나타나는 시점
 
 두 번째 기회 (`ASSIST`)
 - `ASSIST.tier1` — 45–31초 구간의 결과 확률

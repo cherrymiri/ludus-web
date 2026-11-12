@@ -3,8 +3,8 @@ import { SUCCESS, MISS } from './config.js';
 
 const _p = new THREE.Vector3();
 
-// Success line (projected from world height) and the short result moment
-// ("Okay, you win!" / "Missed me!") that hands over to the common lyrics ending.
+// Success line (projected from world height) and the result screen:
+// "Okay, you win!" / "Missed me!" → lyrics + credit → "다시 잡아볼래?".
 // Everything is driven by the game mode + game time, so it always matches
 // what happens in the scene and can never fire twice.
 export class Hud {
@@ -13,11 +13,11 @@ export class Hud {
     this.canvas = canvas;
     this.line = document.getElementById('success-line');
     this.win = document.getElementById('win');
-    this.onEnding = null; // set by main: show the common lyrics ending
+    this.retry = document.getElementById('retry');
     this.clawTopTipWorldY = 0.7; // claw tips when backed off to the top (set from the scene)
     this.compact = false;
     this.ballTopWorldY = 0.2; // top of the resting ball (set from the scene)
-    this.phase = 0; // 0 idle · 1 result fixed · 2 text shown · 3 ending
+    this.phase = 0; // 0 idle · 1 result fixed · 2 text shown · 3 button shown
   }
 
   place() {
@@ -47,10 +47,11 @@ export class Hud {
       const tipY = (1 - (_p.y * 0.5 + 0.5)) * H;
       y = Math.max(y, Math.min(tipY + 14 + hMiss / 2, this.ballY - 8 - hMiss / 2));
     }
+    y = Math.min(Math.max(y, hMiss / 2 + 12), H - hMiss / 2 - 12); // always fully on screen
     this.win.style.setProperty('--miss-y', `${y}px`);
     if (!had) {
       const hWin = this.win.offsetHeight;
-      this.win.style.setProperty('--win-y', `${Math.max(this.lineY + 16, Math.min(0.52 * H, H - hWin - 18))}px`);
+      this.win.style.setProperty('--win-y', `${Math.max(12, Math.min(Math.max(this.lineY + 16, 0.52 * H), H - hWin - 18))}px`);
     }
   }
 
@@ -71,16 +72,24 @@ export class Hud {
       this.phase = 2;
       this.win.classList.add('is-on');
     }
-    if (this.phase < 3 && game.endT >= C.endingDelay) {
+    if (this.phase < 3 && game.endT >= C.buttonDelay) {
       this.phase = 3;
-      this.onEnding?.();
+      this.win.classList.add('has-button');
+      this.retry.tabIndex = 0;
     }
+  }
+
+  // fade the result screen out (start of "다시 잡아볼래?")
+  leave() {
+    this.win.classList.add('is-leaving');
+    this.retry.tabIndex = -1;
+    this.retry.blur();
   }
 
   // back to the playing look (called when the scene is reset)
   clear() {
     this.phase = 0;
-    this.win.classList.remove('is-on', 'is-miss');
+    this.win.classList.remove('is-on', 'is-miss', 'has-button', 'is-leaving');
     this.line.classList.remove('is-success', 'is-flash');
   }
 }

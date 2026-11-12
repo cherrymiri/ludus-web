@@ -97,45 +97,33 @@ const onLoaded = (gltf) => {
     };
     if (startWanted) startPlay();
 
-    // common ending: same lyrics screen after either result
-    const ending = document.getElementById('ending');
-    const replay = document.getElementById('replay');
-    let endingTimers = [];
-    hud.onEnding = () => {
-      ending.classList.remove('is-leaving');
-      ending.hidden = false; // display → restarts all CSS animations from the top
-      document.body.classList.add('is-ending');
-      replay.tabIndex = 0;
-    };
-
-    // "다시 체험하기" — straight back into a fresh round (no opening, no reload).
-    // The scene is reset behind the ending, which then fades away, and the countdown restarts.
-    replay.addEventListener('click', () => {
-      if ((game.mode !== 'won' && game.mode !== 'missed') || game.resetting || ending.hidden) return;
+    // "다시 잡아볼래?" — fade the result out, reset the scene in place (no reload,
+    // no opening, fullscreen kept) and start a fresh round.
+    const retry = document.getElementById('retry');
+    let resetTimers = [];
+    retry.addEventListener('click', () => {
+      if ((game.mode !== 'won' && game.mode !== 'missed') || game.resetting) return;
       if (fsSupported() && !isFullscreen()) enterFullscreen(); // stay immersive
       // a time-out earns a second chance; after any win it is back to normal difficulty
       const secondChance = game.mode === 'missed' && !game.assist;
       game.resetting = true;
-      replay.blur();
-      replay.tabIndex = -1;
-      endingTimers.forEach(clearTimeout);
-      game.reset();
-      game.assist = secondChance;
-      timer.reset();
-      hud.clear();
-      touch.sync();
-      syncMode();
-      document.body.classList.remove('is-ending');
-      ending.classList.add('is-leaving');
-      endingTimers = [
+      hud.leave();
+      document.body.classList.add('is-resetting');
+      resetTimers.forEach(clearTimeout);
+      resetTimers = [
         setTimeout(() => {
-          ending.hidden = true;
-          ending.classList.remove('is-leaving');
-        }, 700),
+          game.reset();
+          game.assist = secondChance;
+          timer.reset();
+          hud.clear();
+          touch.sync();
+          syncMode();
+          document.body.classList.remove('is-resetting');
+        }, 420),
         setTimeout(() => {
           game.resetting = false;
           startPlay();
-        }, 750),
+        }, 900),
       ];
     });
 

@@ -125,19 +125,16 @@
       </div>
       <p class="win-text">Okay, you win!</p>
       <p class="miss-text">Missed me!</p>
-    </div>
-
-    <!-- common ending (after "Okay, you win!" or "Missed me!") -->
-    <section id="ending" aria-label="LUDUS 엔딩" hidden>
-      <div class="en-inner">
-        <p class="en-lyrics">
-          <span class="ln ln0"><span class="tx">내 맘을 누가 가지려고 손을 뻗을 때</span></span>
-          <span class="ln ln1"><span class="tx">난 달아나고 싶어져 꼭 찾을 수 없게</span></span>
+      <!-- lyrics (same for both endings) -->
+      <div class="verse">
+        <p class="verse-lyrics">
+          <span class="lyric-line">내 맘을 누가 가지려고 손을 뻗을 때</span>
+          <span class="lyric-line">난 달아나고 싶어져 꼭 찾을 수 없게</span>
         </p>
-        <p class="en-credit">Inspired by lyrics from "Lay Low" by YooA (OH MY GIRL)</p>
-        <button id="replay" class="en-btn" type="button">다시 체험하기</button>
+        <p class="verse-credit">Inspired by lyrics from "Lay Low" by 유아 (오마이걸)</p>
       </div>
-    </section>
+      <button id="retry" type="button" tabindex="-1">다시 잡아볼래?</button>
+    </div>
 
     <!-- opening -->
     <section id="opening" aria-label="LUDUS 오프닝">

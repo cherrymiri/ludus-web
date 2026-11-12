@@ -193,6 +193,44 @@ body.is-resetting #stage {
     filter: blur(0);
   }
 }
+#retry {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: rgba(var(--mint), 0.92);
+  background: rgba(var(--mint), 0.05);
+  border: 1px solid rgba(var(--mint), 0.38);
+  border-radius: 999px;
+  min-height: 46px;
+  padding: 0 28px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease,
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+#win.has-button #retry {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+#retry:hover {
+  background: rgba(var(--mint), 0.13);
+  border-color: rgba(var(--mint), 0.75);
+  box-shadow: 0 0 22px rgba(var(--mint), 0.18);
+}
+#retry:focus-visible {
+  outline: 1px solid rgba(var(--mint), 0.9);
+  outline-offset: 4px;
+}
+#win.is-leaving {
+  opacity: 0;
+}
 .win-sparks {
   position: absolute;
   left: 50%;
@@ -296,6 +334,95 @@ body.is-resetting #stage {
   50% {
     opacity: 1;
     transform: rotate(-1.6deg) translateY(-3px);
+  }
+}
+
+/* small lyrics block between the result text and 다시 잡아볼래? (both endings) */
+#win .verse {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+#win .verse-lyrics {
+  display: grid;
+  justify-items: center;
+  margin: 0;
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+  font-size: clamp(14px, 1.15vw, 17px);
+  line-height: 1.42;
+  letter-spacing: -0.02em;
+  color: rgb(242, 240, 230); /* soft ivory */
+  word-break: keep-all;
+}
+/* each line is uncovered by a wide, feathered mask drifting to the right,
+   rising a hair and coming into focus; both lines almost together */
+#win .lyric-line {
+  display: block;
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 35%, transparent 65%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 35%, transparent 65%);
+  -webkit-mask-size: 320% 100%;
+  mask-size: 320% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 100% 0;
+  mask-position: 100% 0;
+  opacity: 0;
+}
+#win.is-on .lyric-line {
+  animation: lyric-reveal 1.15s cubic-bezier(0.33, 0, 0.2, 1) 0.6s forwards;
+}
+#win.is-on .lyric-line + .lyric-line {
+  animation-delay: 0.74s;
+}
+/* success: let "Okay, you win!" come into focus first */
+#win.is-on:not(.is-miss) .lyric-line {
+  animation-delay: 0.8s;
+}
+#win.is-on:not(.is-miss) .lyric-line + .lyric-line {
+  animation-delay: 0.94s;
+}
+@keyframes lyric-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(0.35em);
+    filter: blur(3px);
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+  }
+}
+#win .verse-credit {
+  margin: 0;
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
+  font-size: clamp(11px, 0.8vw, 12.5px);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: rgb(122, 146, 158); /* muted blue-grey */
+  opacity: 0;
+}
+#win.is-on .verse-credit {
+  animation: credit-in 0.7s ease 1.7s forwards;
+}
+#win.is-on:not(.is-miss) .verse-credit {
+  animation-delay: 1.9s;
+}
+@keyframes credit-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.85;
   }
 }
 
@@ -549,176 +676,9 @@ body.phase-opening #success-line {
   background: rgba(10, 70, 80, 0.4);
 }
 
-/* ── common ending (Apple Music Sing-style emphasis) ────────── */
-#ending {
-  --u: clamp(20px, min(4.4vh, 5.1vw), 48px); /* base unit for every size and gap */
-  position: fixed;
-  inset: 0;
-  z-index: 55;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden auto;
-  background: #02060a;
-  animation: en-fade 0.9s ease both;
-  transition: opacity 0.65s ease;
-}
-#ending[hidden] {
-  display: none;
-}
-#ending::before {
-  /* soft colour bleed in deep blue / mint, drifting very slowly */
-  content: '';
-  position: absolute;
-  inset: -12%;
-  pointer-events: none;
-  background:
-    radial-gradient(42% 38% at 50% 47%, rgba(22, 112, 128, 0.3), rgba(22, 112, 128, 0) 100%),
-    radial-gradient(38% 34% at 84% 88%, rgba(28, 72, 140, 0.24), rgba(28, 72, 140, 0) 100%),
-    radial-gradient(34% 30% at 14% 14%, rgba(18, 120, 120, 0.14), rgba(18, 120, 120, 0) 100%);
-  animation: en-drift 22s ease-in-out infinite alternate;
-}
-@keyframes en-drift {
-  from {
-    transform: translate3d(-1.5%, 1%, 0) scale(1);
-  }
-  to {
-    transform: translate3d(1.5%, -1.5%, 0) scale(1.06);
-  }
-}
-#ending.is-leaving {
-  opacity: 0;
-  pointer-events: none;
-}
-@keyframes en-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-.en-inner {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 1100px;
-  padding: calc(var(--u) * 2) 24px;
-  text-align: center;
-}
-.en-lyrics {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0;
-  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
-  font-size: var(--u);
-  font-weight: 600;
-  line-height: 1.24;
-  letter-spacing: -0.028em;
-  word-break: keep-all;
-  font-feature-settings: 'kern' 1;
-}
-/* mask: each line is clipped by its own box; the words rise into it, both lines almost together */
-.en-lyrics .ln {
-  display: block;
-  overflow: hidden;
-  padding: 0.08em 0.14em;
-}
-.en-lyrics .tx {
-  display: block;
-  opacity: 0;
-  transform: translateY(105%);
-  filter: blur(2px);
-  animation: mask-up 0.95s cubic-bezier(0.16, 0.84, 0.24, 1) forwards;
-}
-.en-lyrics .ln0 .tx {
-  animation-delay: 0.55s;
-}
-.en-lyrics .ln1 .tx {
-  animation-delay: 0.66s;
-}
-@keyframes mask-up {
-  60% {
-    opacity: 1;
-  }
-  to {
-    opacity: 1;
-    transform: none;
-    filter: blur(0);
-  }
-}
-/* first line steps back (lower value, a hair soft); second line is crisp and bright */
-.en-lyrics .ln0 {
-  color: rgba(206, 230, 234, 0.46);
-}
-.en-lyrics .ln1 {
-  font-size: 1.06em;
-  font-weight: 700;
-  letter-spacing: -0.032em;
-  color: rgb(234, 251, 250);
-}
-.en-lyrics .ln0 .tx {
-  animation-name: mask-up-soft;
-}
-@keyframes mask-up-soft {
-  60% {
-    opacity: 1;
-  }
-  to {
-    opacity: 1;
-    transform: none;
-    filter: blur(0.35px);
-  }
-}
-.en-credit {
-  margin: calc(var(--u) * 1.9) 0 0;
-  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
-  font-size: max(11px, calc(var(--u) * 0.34));
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  padding-left: 0.1em;
-  color: rgba(168, 196, 206, 0.42);
-  opacity: 0;
-  animation: en-fade 0.8s ease 1.45s forwards;
-}
-.en-btn {
-  margin-top: calc(var(--u) * 1.45);
-  padding: calc(var(--u) * 0.48) calc(var(--u) * 1.4);
-  border-radius: 999px;
-  font: 500 max(13px, calc(var(--u) * 0.4)) / 1 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
-  letter-spacing: 0.06em;
-  color: rgba(230, 248, 248, 0.86);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(170, 232, 232, 0.16);
-  cursor: pointer;
-  touch-action: manipulation;
-  opacity: 0;
-  animation: en-fade 0.8s ease 1.65s forwards;
-  transition:
-    background 0.3s,
-    border-color 0.3s,
-    color 0.3s;
-}
-.en-btn:hover {
-  background: rgba(30, 130, 140, 0.28);
-  border-color: rgba(160, 236, 232, 0.45);
-  color: #fff;
-}
-.en-btn:focus-visible {
-  outline: 1px solid rgba(var(--mint), 0.9);
-  outline-offset: 4px;
-}
-/* the game HUD steps aside while the ending is up */
-body.is-ending .touch-ui,
-body.is-ending #win {
-  opacity: 0;
-}
 @media (prefers-reduced-motion: reduce) {
   .op-inner > *,
-  .en-lyrics .tx {
+  #win .lyric-line {
     animation-duration: 0.01s;
     animation-delay: 0s;
   }
@@ -955,6 +915,9 @@ body.is-touch .for-mouse {
   #win .miss-text {
     font-size: 46px;
   }
+  #win .verse-lyrics {
+    font-size: 13.5px;
+  }
   #timer {
     position: fixed;
     right: var(--gutter);
@@ -998,8 +961,22 @@ body.is-touch .for-mouse {
   #win .miss-text {
     font-size: clamp(40px, 7vw, 64px);
   }
+  #win,
   #win.is-miss {
     gap: 10px;
+  }
+  #win .verse {
+    gap: 4px;
+  }
+  #win .verse-lyrics {
+    font-size: 12.5px;
+    line-height: 1.36;
+  }
+  #win .verse-credit {
+    font-size: 10.5px;
+  }
+  #retry {
+    min-height: 38px;
   }
   #win.is-miss .miss-text {
     font-size: clamp(34px, 6vw, 48px);
