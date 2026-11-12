@@ -348,11 +348,12 @@ body.is-resetting #stage {
   justify-items: center;
   margin: 0;
   font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
-  font-weight: 500;
+  font-weight: 560; /* the bold Apple Music weight, same for both lines */
   font-size: clamp(14px, 1.15vw, 17px);
   line-height: 1.42;
   letter-spacing: -0.02em;
-  color: rgb(246, 244, 236); /* bright ivory when active */
+  color: rgb(246, 244, 236); /* bright ivory */
+  text-shadow: 0 0 18px rgba(var(--mint), 0.16); /* faint light, for depth */
   word-break: keep-all;
 }
 /* Lyrics: both lines appear together as one group — a soft mask opens across
@@ -382,12 +383,13 @@ body.is-resetting #stage {
   0% {
     opacity: 0;
     transform: translateY(0.3em);
-    filter: blur(2px);
+    filter: blur(5px);
     -webkit-mask-position: 100% 0;
     mask-position: 100% 0;
   }
-  30% {
+  35% {
     opacity: 1;
+    filter: blur(2px);
   }
   100% {
     opacity: 1;
