@@ -352,14 +352,21 @@ body.is-resetting #stage {
   font-size: clamp(14px, 1.15vw, 17px);
   line-height: 1.42;
   letter-spacing: -0.02em;
-  color: rgb(242, 240, 230); /* soft ivory */
+  color: rgb(246, 244, 236); /* bright ivory when active */
   word-break: keep-all;
 }
-/* each line is uncovered by a wide, feathered mask drifting to the right,
-   rising a hair and coming into focus; both lines almost together */
-#win .lyric-line {
-  display: block;
-  white-space: nowrap;
+/* Apple Music-style lyrics, on the ending timeline:
+   1. the block is uncovered by a soft mask (both lines dim and slightly blurred)
+   2. line 1 comes into focus (brighter, sharper, a touch bolder), line 2 stays dim
+   3. line 1 eases back while line 2 comes into focus, and stays.
+   Only opacity / blur / transform / weight change, so the layout never moves. */
+#win {
+  --lyr-at: 0.6s; /* start of the lyrics after the result text appears */
+}
+#win:not(.is-miss) {
+  --lyr-at: 0.8s; /* let "Okay, you win!" come into focus first */
+}
+#win .verse-lyrics {
   -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 35%, transparent 65%);
   mask-image: linear-gradient(90deg, #000 0%, #000 35%, transparent 65%);
   -webkit-mask-size: 320% 100%;
@@ -368,38 +375,81 @@ body.is-resetting #stage {
   mask-repeat: no-repeat;
   -webkit-mask-position: 100% 0;
   mask-position: 100% 0;
-  opacity: 0;
 }
-#win.is-on .lyric-line {
-  animation: lyric-reveal 1.15s cubic-bezier(0.33, 0, 0.2, 1) 0.6s forwards;
+#win.is-on .verse-lyrics {
+  animation: lyr-unmask 1.1s cubic-bezier(0.33, 0, 0.2, 1) var(--lyr-at) forwards;
 }
-#win.is-on .lyric-line + .lyric-line {
-  animation-delay: 0.74s;
-}
-/* success: let "Okay, you win!" come into focus first */
-#win.is-on:not(.is-miss) .lyric-line {
-  animation-delay: 0.8s;
-}
-#win.is-on:not(.is-miss) .lyric-line + .lyric-line {
-  animation-delay: 0.94s;
-}
-@keyframes lyric-reveal {
-  0% {
-    opacity: 0;
-    transform: translateY(0.35em);
-    filter: blur(3px);
-    -webkit-mask-position: 100% 0;
-    mask-position: 100% 0;
-  }
-  35% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 1;
-    transform: none;
-    filter: blur(0);
+@keyframes lyr-unmask {
+  to {
     -webkit-mask-position: 0 0;
     mask-position: 0 0;
+  }
+}
+#win .lyric-line {
+  display: block;
+  white-space: nowrap;
+  font-weight: 400;
+  opacity: 0.3;
+  filter: blur(1.6px);
+  transform: translateY(0.3em) scale(0.97);
+  transform-origin: 50% 50%;
+}
+#win.is-on .lyric-line {
+  animation: lyr-first 3.4s cubic-bezier(0.4, 0, 0.2, 1) var(--lyr-at) forwards;
+}
+#win.is-on .lyric-line + .lyric-line {
+  animation-name: lyr-second;
+}
+/* inactive → active → inactive */
+@keyframes lyr-first {
+  0% {
+    opacity: 0.3;
+    filter: blur(1.6px);
+    transform: translateY(0.3em) scale(0.97);
+    font-weight: 400;
+  }
+  16% {
+    opacity: 0.32;
+    filter: blur(1.4px);
+    transform: translateY(0) scale(0.97);
+    font-weight: 400;
+  }
+  34%,
+  66% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+    font-weight: 560;
+  }
+  86%,
+  100% {
+    opacity: 0.34;
+    filter: blur(1.3px);
+    transform: translateY(0) scale(0.97);
+    font-weight: 400;
+  }
+}
+/* inactive … → active (and stays) */
+@keyframes lyr-second {
+  0% {
+    opacity: 0.3;
+    filter: blur(1.6px);
+    transform: translateY(0.3em) scale(0.97);
+    font-weight: 400;
+  }
+  16%,
+  66% {
+    opacity: 0.32;
+    filter: blur(1.4px);
+    transform: translateY(0) scale(0.97);
+    font-weight: 400;
+  }
+  88%,
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+    font-weight: 560;
   }
 }
 #win .verse-credit {
@@ -412,7 +462,7 @@ body.is-resetting #stage {
   opacity: 0;
 }
 #win.is-on .verse-credit {
-  animation: credit-in 0.7s ease 1.7s forwards;
+  animation: credit-in 0.8s ease 1.6s forwards;
 }
 #win.is-on:not(.is-miss) .verse-credit {
   animation-delay: 1.9s;
