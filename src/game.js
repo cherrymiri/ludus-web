@@ -42,6 +42,7 @@ export class Game {
     this.auto = null; // assist take-over sequence
     this.endT = 0; // s since won / missed
     this.tease = null;
+    this.missRetractTop = false; // set from the HUD layout
   }
 
   // Claw can only be driven while playing (not before 시작하기, not after the result).
@@ -84,7 +85,9 @@ export class Game {
     if (this.holding) this.release('opened');
     // the claw lets go and backs off to just above the success line,
     // leaving the middle of the screen (and the ball) free
-    c.target.set(c.pos.x, Math.min(CLAW.yMax - 0.02, SUCCESS.lineY + 0.04 - c.lowestOffset));
+    // (all the way up on compact screens, where the ending text needs that room)
+    const up = this.missRetractTop ? CLAW.yMax - 0.02 : SUCCESS.lineY + 0.04 - c.lowestOffset;
+    c.target.set(c.pos.x, Math.min(CLAW.yMax - 0.02, up));
     return true;
   }
 

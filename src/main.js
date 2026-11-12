@@ -9,6 +9,7 @@ import { Hud } from './hud.js';
 import { bindInput } from './input.js';
 import { bindTouch } from './touch.js';
 import { Timer } from './timer.js';
+import { CLAW } from './config.js';
 import './style.css';
 
 const container = document.getElementById('stage');
@@ -46,6 +47,7 @@ const onLoaded = (gltf) => {
     game.reset();
     hud.startWorldY = (claw.lowestTipY() + ball.top()) / 2;
     hud.ballTopWorldY = ball.top();
+    hud.clawTopTipWorldY = CLAW.yMax - 0.02 + claw.lowestOffset;
 
     const syncMode = () => {
       const m = game.mode;
@@ -101,6 +103,7 @@ const onLoaded = (gltf) => {
       lastH = h;
       resize();
       hud.place();
+      game.missRetractTop = hud.compact;
     };
     const checkSize = () => {
       if (container.clientWidth !== lastW || container.clientHeight !== lastH) onResize();

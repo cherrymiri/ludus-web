@@ -15,8 +15,13 @@ export class Hud {
     this.win = document.getElementById('win');
     this.retry = document.getElementById('retry');
     this.start = document.getElementById('start');
+    this.clawTopTipWorldY = 0.7; // claw tips when backed off to the top (set from the scene)
+    this.compact = false;
     this.startWorldY = 0.3; // set from the scene: the empty gap between claw and ball
     this.ballTopWorldY = 0.2; // top of the resting ball (set from the scene)
+    // lyrics are filled in by hand in index.html; without them, no lyrics or credit
+    const lines = [...this.win.querySelectorAll('.lyric-line')];
+    this.win.classList.toggle('no-lyrics', !lines.length || lines.some((l) => !l.textContent.trim()));
     this.phase = 0; // 0 idle · 1 line lit / result fixed · 2 text shown · 3 button shown
   }
 
@@ -29,8 +34,32 @@ export class Hud {
     // "Missed me!" sits in the empty band between the success line and the resting ball
     const lineY = parseFloat(this.line.style.top);
     _p.set(0, this.ballTopWorldY, 0).project(this.camera);
-    const ballY = (1 - (_p.y * 0.5 + 0.5)) * h;
-    this.win.style.setProperty('--miss-y', `${(lineY + ballY) / 2}px`);
+    this.ballY = (1 - (_p.y * 0.5 + 0.5)) * h;
+    this.lineY = lineY;
+    this.placeMiss();
+  }
+
+  // "Missed me!" + lyrics sit in the empty band between the success line and the
+  // resting ball; if the band is too short the block keeps clear of the ball
+  // and grows upward instead.
+  placeMiss() {
+    if (this.lineY === undefined) return;
+    // measure the ending block (adding the class for a moment causes no paint)
+    const had = this.win.classList.contains('is-miss');
+    if (!had) this.win.classList.add('is-miss');
+    const hBlock = this.win.offsetHeight;
+    if (!had) this.win.classList.remove('is-miss');
+    // compact: the block does not fit between the line and the ball, so the
+    // claw backs off to the top and the block may rise above the line
+    this.compact = hBlock + 36 > this.ballY - this.lineY;
+    const mid = (this.lineY + this.ballY) / 2;
+    let y = Math.min(mid, this.ballY - 18 - hBlock / 2);
+    if (this.compact) {
+      _p.set(0, this.clawTopTipWorldY ?? 0.7, 0).project(this.camera);
+      const tipY = (1 - (_p.y * 0.5 + 0.5)) * this.canvas.clientHeight;
+      y = Math.max(y, Math.min(tipY + 14 + hBlock / 2, this.ballY - 8 - hBlock / 2));
+    }
+    this.win.style.setProperty('--miss-y', `${y}px`);
   }
 
   update(game) {
@@ -46,6 +75,7 @@ export class Hud {
       if (this.phase < 1) {
         this.phase = 1;
         this.win.classList.add('is-miss');
+        this.placeMiss();
       }
       if (this.phase < 2 && game.endT >= MISS.textDelay) this.showText();
       if (this.phase < 3 && game.endT >= MISS.buttonDelay) this.showButton();
