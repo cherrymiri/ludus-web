@@ -338,23 +338,69 @@ body.is-resetting #stage {
 }
 
 /* small lyrics block between the result text and 다시 잡아볼래? (both endings) */
+/* three breathing spaces: result text | lyrics + credit | button (fluid with viewport height) */
+#win,
+#win.is-miss {
+  --gap-text: clamp(30px, 7.6vh, 88px); /* result text → lyrics   (≈80 px at 1080p) */
+  --gap-credit: clamp(14px, 2vh, 22px); /* lyrics → credit        (≈21 px) */
+  --gap-button: clamp(28px, 7.1vh, 82px); /* credit → 다시 잡아볼래?  (≈77 px) */
+  gap: 0;
+}
 #win .verse {
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: var(--gap-credit);
+  margin-top: var(--gap-text);
 }
-#win .verse-lyrics {
+#win #retry {
+  margin-top: var(--gap-button);
+}
+#win .verse-lyrics,
+#win .verse-glow {
   display: grid;
   justify-items: center;
   margin: 0;
   font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;
-  font-weight: 560; /* the bold Apple Music weight, same for both lines */
+  font-weight: 600; /* bold Apple Music weight, same for both lines */
   font-size: clamp(14px, 1.15vw, 17px);
   line-height: 1.42;
-  letter-spacing: -0.02em;
-  color: rgb(246, 244, 236); /* bright ivory */
-  text-shadow: 0 0 18px rgba(var(--mint), 0.16); /* faint light, for depth */
+  letter-spacing: -0.022em;
   word-break: keep-all;
+}
+#win .verse-lyrics {
+  position: relative;
+  color: rgb(247, 245, 238); /* bright ivory */
+  /* a crisp edge with a whisper of light around it */
+  text-shadow:
+    0 0 1px rgba(255, 255, 255, 0.28),
+    0 0 12px rgba(236, 246, 244, 0.14);
+}
+/* depth: a soft, low-opacity blurred copy of the same lines sits behind them
+   (a clone made by hud.js), like the bloom behind Apple Music lyrics */
+#win .verse-glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  color: rgb(186, 236, 236);
+  pointer-events: none;
+  opacity: 0;
+  filter: blur(9px);
+  transform: scale(1.03);
+}
+#win.is-on .verse-glow {
+  animation: glow-in 1s ease-out calc(var(--lyr-at) + 0.15s) forwards;
+}
+@keyframes glow-in {
+  to {
+    opacity: 0.42;
+    transform: scale(1.02);
+  }
+}
+#win .verse-glow .lyric-line {
+  display: block;
+  white-space: nowrap;
 }
 /* Lyrics: both lines appear together as one group — a soft mask opens across
    them while they rise a hair and come into focus (~0.7 s), then stay as they are.
@@ -382,7 +428,7 @@ body.is-resetting #stage {
 @keyframes lyr-reveal {
   0% {
     opacity: 0;
-    transform: translateY(0.3em);
+    transform: translateY(0.35em) scale(0.985);
     filter: blur(5px);
     -webkit-mask-position: 100% 0;
     mask-position: 100% 0;
@@ -679,7 +725,8 @@ body.phase-opening #success-line {
 
 @media (prefers-reduced-motion: reduce) {
   .op-inner > *,
-  #win .verse-lyrics {
+  #win .verse-lyrics,
+  #win .verse-glow {
     animation-duration: 0.01s;
     animation-delay: 0s;
   }
@@ -910,13 +957,17 @@ body.is-touch .for-mouse {
   #success-line .label {
     right: 70px;
   }
+  #win,
   #win.is-miss {
-    gap: 16px;
+    --gap-text: 22px;
+    --gap-credit: 10px;
+    --gap-button: 24px;
   }
   #win .miss-text {
     font-size: 46px;
   }
-  #win .verse-lyrics {
+  #win .verse-lyrics,
+  #win .verse-glow {
     font-size: 13.5px;
   }
   #timer {
@@ -964,12 +1015,12 @@ body.is-touch .for-mouse {
   }
   #win,
   #win.is-miss {
-    gap: 10px;
+    --gap-text: 14px;
+    --gap-credit: 6px;
+    --gap-button: 16px;
   }
-  #win .verse {
-    gap: 4px;
-  }
-  #win .verse-lyrics {
+  #win .verse-lyrics,
+  #win .verse-glow {
     font-size: 12.5px;
     line-height: 1.36;
   }

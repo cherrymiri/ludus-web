@@ -14,6 +14,14 @@ export class Hud {
     this.line = document.getElementById('success-line');
     this.win = document.getElementById('win');
     this.retry = document.getElementById('retry');
+    // soft blurred copy of the lyrics behind them, for Apple Music-like depth
+    const lyr = this.win.querySelector('.verse-lyrics');
+    if (lyr && !this.win.querySelector('.verse-glow')) {
+      const glow = lyr.cloneNode(true);
+      glow.className = 'verse-glow';
+      glow.setAttribute('aria-hidden', 'true');
+      lyr.before(glow);
+    }
     this.clawTopTipWorldY = 0.7; // claw tips when backed off to the top (set from the scene)
     this.compact = false;
     this.ballTopWorldY = 0.2; // top of the resting ball (set from the scene)
@@ -51,7 +59,9 @@ export class Hud {
     this.win.style.setProperty('--miss-y', `${y}px`);
     if (!had) {
       const hWin = this.win.offsetHeight;
-      this.win.style.setProperty('--win-y', `${Math.max(12, Math.min(Math.max(this.lineY + 16, 0.52 * H), H - hWin - 18))}px`);
+      // centre the whole group (text, lyrics, button) in the open space under the line
+      const top = (this.lineY + H) / 2 - hWin / 2;
+      this.win.style.setProperty('--win-y', `${Math.max(12, Math.min(Math.max(this.lineY + 16, top), H - hWin - 18))}px`);
     }
   }
 
