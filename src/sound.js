@@ -7,11 +7,13 @@
 //   hit_1..4    "Bouncing Ball Recordings" by yfjesse (CC0)       freesound.org/s/734241
 //   claw_a/d    "Latch Clicks 2" by Nightflame (CC0)              freesound.org/s/397595
 //   claw_b      "Small servo (arduino)" by gpag1 (CC0)            freesound.org/s/520514
+//   end_win (dreamy music box) / end_miss (boing bubbles): original endings made for LUDUS (synthesized)
 //   claw_a/b/d are softened (high frequencies cut, pitched slightly down) so they don't hurt the ears.
 // Browsers only allow sound after a tap, click or key press; the first one unlocks it (PC and phones alike).
 const LEVEL = {
   squeeze_1: 0.94, squeeze_2: 1, slip_kiss: 0.9, slip_pop: 1, bounce_small: 0.72,
   hit_1: 0.97, hit_2: 0.88, hit_3: 0.72, hit_4: 0.47, claw_a: 0.8, claw_d: 1, claw_b: 0.3,
+  end_win: 0.9, end_miss: 0.85,
 };
 const MAX_VOICES = 6;
 const clamp = (v) => Math.max(0, Math.min(1, v));
@@ -95,6 +97,9 @@ export const sfx = {
     const n = Math.random() < 0.4 ? 'bounce_small' : real;
     play(n, { kind: 'bounce', gap: 0.05, gain: 0.12 + 0.88 * k, lp: 2500 + 15000 * k, rate: (1 + (1 - k) * 0.1) * jitter(0.04) });
   },
+  // ending sounds, played once when the result text appears
+  win() { play('end_win', { kind: 'ending', gap: 1 }); },
+  miss() { play('end_miss', { kind: 'ending', gap: 1 }); },
   clawClose() { play('claw_a', { kind: 'clawCmd', gap: 0.08, rate: jitter(0.05) }); },
   clawOpen() { play('claw_d', { kind: 'clawCmd', gap: 0.08, rate: jitter(0.05) }); },
   // the claw starts moving; speed in m/s

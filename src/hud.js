@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SUCCESS, MISS } from './config.js';
+import { sfx } from './sound.js';
 
 const _p = new THREE.Vector3();
 
@@ -81,6 +82,7 @@ export class Hud {
     if (this.phase < 2 && game.endT >= C.textDelay) {
       this.phase = 2;
       this.win.classList.add('is-on');
+      won ? sfx.win() : sfx.miss();
     }
     if (this.phase < 3 && game.endT >= C.buttonDelay) {
       this.phase = 3;
