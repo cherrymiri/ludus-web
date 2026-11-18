@@ -1,6 +1,7 @@
 // LUDUS sounds. Real recordings from Freesound, trimmed and levelled (licence checked on each page):
 //   squeeze_1/2 short soft rubber '뽁' made for LUDUS (synthesized, ~0.1 s) — replaced the sticky slime recordings
 //   slip_kiss   "Lip smack 2 (short)" by hollandm (CC0)           freesound.org/s/691905
+//   slip_*      transients tamed and high end cut so they never sound torn
 //   slip_pop    "EarlyFiles-TSR-Gummy Pop 3" by CAT-FOX_ALEX (CC0) freesound.org/s/853440
 //   bounce_small "Bouncy ball bouncing on floor" by 89o_dev (CC0) freesound.org/s/869172
 //   hit_1..4    "Bouncing Ball Recordings" by yfjesse (CC0)       freesound.org/s/734241
@@ -10,7 +11,7 @@
 //   claw_a/b/d are softened (high frequencies cut, pitched slightly down) so they don't hurt the ears.
 // Browsers only allow sound after a tap, click or key press; the first one unlocks it (PC and phones alike).
 const LEVEL = {
-  squeeze_1: 0.94, squeeze_2: 1, slip_kiss: 0.9, slip_pop: 1, bounce_small: 0.72,
+  squeeze_1: 0.94, squeeze_2: 1, slip_kiss: 0.6, slip_pop: 0.6, bounce_small: 0.72,
   hit_1: 0.97, hit_2: 0.88, hit_3: 0.72, hit_4: 0.47, claw_a: 0.8, claw_d: 1, claw_b: 0.3,
   end_win: 0.9, end_miss: 0.85,
 };
@@ -34,7 +35,8 @@ function setup() {
   if (!AC) return;
   ctx = new AC();
   const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -10;
+  // a real limiter at the end, so overlapping sounds never clip (no tearing peaks)
+  comp.threshold.value = -16; comp.knee.value = 4; comp.ratio.value = 20; comp.attack.value = 0.001; comp.release.value = 0.1;
   out = ctx.createGain();
   out.gain.value = 0.85;
   out.connect(comp).connect(ctx.destination);
@@ -81,7 +83,7 @@ export const sfx = {
   // the ball springs out of the claw ('뽁') or slides out of it ('쪽')
   slip(type, k = 1) {
     k = clamp(k);
-    play(type === 'pop' ? 'slip_pop' : 'slip_kiss', { kind: 'slip', gap: 0.12, gain: 0.35 + 0.65 * k, lp: 3000 + 13000 * k, rate: jitter(0.06) });
+    play(type === 'pop' ? 'slip_pop' : 'slip_kiss', { kind: 'slip', gap: 0.12, gain: 0.35 + 0.65 * k, lp: 2500 + 2500 * k, rate: jitter(0.06) });
   },
   // speed: how fast the ball hits the floor (m/s)
   bounce(speed) {
