@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OUTCOMES, PITY, ALIGNMENT_INFLUENCE, GRIP, HOLD, VARIATION, SUCCESS, CLAW, MISS, ASSIST } from './config.js';
+import { sfx } from './sound.js';
 
 const rand = ([a, b]) => a + Math.random() * (b - a);
 const sign = () => (Math.random() < 0.5 ? -1 : 1);
@@ -194,6 +195,7 @@ export class Game {
     b.vel.set(Math.sin(phi) * sp, this.p.popUp * strength, Math.cos(phi) * sp * 0.75).add(this.claw.vel);
     b.omega.set(b.vel.z / b.R, 0, -b.vel.x / b.R);
     b.kick(0.9 * strength, 0.5 * strength * sign());
+    sfx.slip('pop', strength);
     this.ghost = 0.34;
     if (counted) this.fails++;
   }
@@ -209,6 +211,7 @@ export class Game {
     }
     b.omega.set(b.vel.z / b.R, 0, -b.vel.x / b.R);
     b.kick(0.35, 0.15 * sign());
+    sfx.slip('kiss', reason === 'slip' ? 0.9 : 0.55);
     this.ghost = 0.12;
   }
 
@@ -226,6 +229,7 @@ export class Game {
     const b = this.ball;
     if (this.assist && this.mode === 'play') this.updateAssist(dt);
     c.animateCommand(dt);
+    this.clawSounds(dt);
 
     // 1. claw position (with floor / ball limits)
     let minY = 0.004 - c.lowestOffset;
@@ -651,5 +655,28 @@ export class Game {
       }
     }
     b.dents = dents;
+    this.squeezeSound(dents);
+  }
+
+  // ── sounds, driven by what the ball and claw actually do ─────
+  // A squish each time the ball is pressed noticeably deeper; louder and fuller the deeper it goes.
+  squeezeSound(dents) {
+    let total = 0;
+    for (const d of dents) total += d.d;
+    const mark = this.sqMark ?? 0;
+    if (total > mark + 0.006) {
+      if (sfx.squeeze(total / 0.04)) this.sqMark = total;
+    } else if (total < mark - 0.006) this.sqMark = total;   // let go a little: ready to squish again
+  }
+  // Latch '착' on close, '찰칵' on open, a small servo whirr when the claw starts moving.
+  clawSounds(dt) {
+    const c = this.claw;
+    if (this.wasClosed !== undefined && c.closed !== this.wasClosed) (c.closed ? sfx.clawClose() : sfx.clawOpen());
+    this.wasClosed = c.closed;
+    const speed = Math.hypot(c.vel.x, c.vel.y);
+    if (speed > 0.12) {
+      if ((this.still ?? 1) > 0.3) sfx.clawMove(speed);
+      this.still = 0;
+    } else this.still = (this.still ?? 0) + dt;
   }
 }

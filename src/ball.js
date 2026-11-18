@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BALL } from './config.js';
+import { sfx } from './sound.js';
 
 const _q = new THREE.Quaternion();
 const _ax = new THREE.Vector3();
@@ -103,7 +104,10 @@ export class Ball {
     const pen = this.Rbot - p.y;
     const wasGrounded = this.grounded;
     if (pen > 0) {
-      if (!wasGrounded && v.y < -0.25) this.kick(v.y * 1.6, (Math.random() - 0.5) * Math.abs(v.y) * 0.8);
+      if (!wasGrounded && v.y < -0.25) {
+        this.kick(v.y * 1.6, (Math.random() - 0.5) * Math.abs(v.y) * 0.8);
+        sfx.bounce(-v.y);
+      }
       const acc = BALL.floorStiffness * pen - BALL.floorDamping * v.y;
       v.y += Math.max(0, acc) * dt;
       const f = Math.exp(-BALL.rollFriction * dt);
