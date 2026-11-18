@@ -16,7 +16,7 @@
 const LEVEL = {
   squeeze_1: 0.28, squeeze_2: 0.27, slip_kiss: 0.56, slip_pop: 0.6, bounce_small: 0.46,
   hit_1: 0.75, hit_2: 0.85, hit_3: 0.56, hit_4: 0.37, claw_a: 0.54, claw_d: 0.48,
-  end_win: 0.19, end_miss: 0.37, bgm: 1,
+  end_win: 0.19, end_miss: 0.26, bgm: 1,
 };
 const MAX_VOICES = 6;
 const FX_TRIM = 0.5;   // all sound effects about 6 dB quieter (the music keeps its own level)
