@@ -5,7 +5,8 @@
 //   slip_pop    "EarlyFiles-TSR-Gummy Pop 3" by CAT-FOX_ALEX (CC0) freesound.org/s/853440
 //   bounce_small "Bouncy ball bouncing on floor" by 89o_dev (CC0) freesound.org/s/869172
 //   hit_1..4    "Bouncing Ball Recordings" by yfjesse (CC0)       freesound.org/s/734241
-//   claw_a/d    "Latch Clicks 2" by Nightflame (CC0)              freesound.org/s/397595
+//   claw_a      "Putting On and Taking Off a Watch" by ross_sinc (CC0) freesound.org/s/444797  (clasp tick: claw closes)
+//   claw_d      "Latch Clicks 2" by Nightflame (CC0)              freesound.org/s/397595
 //   bgm         original 45 s background music made for LUDUS (synthesized summer pop; inspired by the mood only, no borrowed melody)
 //   end_win (dreamy music box) / end_miss (boing bubbles): original endings made for LUDUS (synthesized)
 //   claw_a/d are softened (high frequencies cut, pitched slightly down) so they don't hurt the ears.
@@ -14,7 +15,7 @@
 // an ending around -26 LUFS, so visitors never have to touch the volume between the six works.
 const LEVEL = {
   squeeze_1: 0.28, squeeze_2: 0.27, slip_kiss: 0.56, slip_pop: 0.6, bounce_small: 0.46,
-  hit_1: 0.75, hit_2: 0.85, hit_3: 0.56, hit_4: 0.37, claw_a: 0.38, claw_d: 0.48,
+  hit_1: 0.75, hit_2: 0.85, hit_3: 0.56, hit_4: 0.37, claw_a: 0.54, claw_d: 0.48,
   end_win: 0.19, end_miss: 0.37, bgm: 1,
 };
 const MAX_VOICES = 6;
