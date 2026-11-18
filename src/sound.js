@@ -1,6 +1,5 @@
 // LUDUS sounds. Real recordings from Freesound, trimmed and levelled (licence checked on each page):
-//   squeeze_1   "Slime 27.wav" by Archos (CC0)                    freesound.org/s/433840  (pitched up)
-//   squeeze_2   "Wet Squishy sound" by ricexzeeb (CC0)            freesound.org/s/151184  (pitched up)
+//   squeeze_1/2 short soft rubber '뽁' made for LUDUS (synthesized, ~0.1 s) — replaced the sticky slime recordings
 //   slip_kiss   "Lip smack 2 (short)" by hollandm (CC0)           freesound.org/s/691905
 //   slip_pop    "EarlyFiles-TSR-Gummy Pop 3" by CAT-FOX_ALEX (CC0) freesound.org/s/853440
 //   bounce_small "Bouncy ball bouncing on floor" by 89o_dev (CC0) freesound.org/s/869172
