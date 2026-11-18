@@ -12,6 +12,7 @@ import { Timer } from './timer.js';
 import { CLAW } from './config.js';
 import { enterFullscreen, fsSupported, isFullscreen, onFullscreenChange } from './fullscreen.js';
 import './style.css';
+import { sfx } from './sound.js';
 
 const container = document.getElementById('stage');
 
@@ -91,6 +92,7 @@ const onLoaded = (gltf) => {
       if (!game.start()) return false;
       const now = nowMs();
       timer.start(now);
+      sfx.bgmStart();
       lastNow = now;
       syncMode();
       return true;
@@ -176,6 +178,7 @@ const onLoaded = (gltf) => {
       lastNow = now;
       timer.render(now);
       syncMode();
+      if (game.mode !== 'play') sfx.bgmStop();   // result reached: music fades so the ending sound is heard
       hud.update(game);
       touch.sync();
       coreU.uTime.value += dt;

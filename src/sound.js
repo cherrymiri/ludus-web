@@ -6,6 +6,7 @@
 //   bounce_small "Bouncy ball bouncing on floor" by 89o_dev (CC0) freesound.org/s/869172
 //   hit_1..4    "Bouncing Ball Recordings" by yfjesse (CC0)       freesound.org/s/734241
 //   claw_a/d    "Latch Clicks 2" by Nightflame (CC0)              freesound.org/s/397595
+//   bgm         original 45 s background music made for LUDUS (synthesized summer pop; inspired by the mood only, no borrowed melody)
 //   end_win (dreamy music box) / end_miss (boing bubbles): original endings made for LUDUS (synthesized)
 //   claw_a/d are softened (high frequencies cut, pitched slightly down) so they don't hurt the ears.
 // Browsers only allow sound after a tap, click or key press; the first one unlocks it (PC and phones alike).
@@ -14,7 +15,7 @@
 const LEVEL = {
   squeeze_1: 0.28, squeeze_2: 0.27, slip_kiss: 0.56, slip_pop: 0.6, bounce_small: 0.46,
   hit_1: 0.75, hit_2: 0.85, hit_3: 0.56, hit_4: 0.37, claw_a: 0.38, claw_d: 0.48,
-  end_win: 0.19, end_miss: 0.37,
+  end_win: 0.19, end_miss: 0.37, bgm: 1,
 };
 const MAX_VOICES = 6;
 const clamp = (v) => Math.max(0, Math.min(1, v));
@@ -54,6 +55,7 @@ function unlock() {
   const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0);
 }
 for (const e of ['pointerdown', 'touchend', 'click', 'keydown']) window.addEventListener(e, unlock, { capture: true, passive: true });
+setup();   // load the sounds (and the music) right away; they stay silent until the first tap unlocks audio
 
 // gap: the same kind of sound never repeats faster than this (seconds).
 function play(name, { gain = 1, rate = 1, lp = 18000, kind = name, gap = 0 } = {}) {
@@ -73,9 +75,35 @@ function play(name, { gain = 1, rate = 1, lp = 18000, kind = name, gap = 0 } = {
 }
 const jitter = (k) => 1 + (Math.random() - 0.5) * k;
 
+// background music: starts with the 45 s countdown, loops only if a round runs longer (second chance)
+let bgm = null;
+function bgmStop(fade = 1.0) {
+  if (!bgm || !ctx) return;
+  const { s, g } = bgm; bgm = null;
+  g.gain.cancelScheduledValues(ctx.currentTime);
+  g.gain.setTargetAtTime(0, ctx.currentTime, fade / 3);
+  try { s.stop(ctx.currentTime + fade + 0.1); } catch {}
+}
+function bgmStart() {
+  if (!ctx) return;
+  bgmStop(0.15);
+  const start = () => {
+    if (!bufs.bgm || ctx.state !== 'running') return false;
+    const s = ctx.createBufferSource(); s.buffer = bufs.bgm; s.loop = true; s.loopEnd = 45;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, ctx.currentTime); g.gain.linearRampToValueAtTime(LEVEL.bgm, ctx.currentTime + 0.3);
+    s.connect(g).connect(out); s.start(); bgm = { s, g };
+    return true;
+  };
+  if (!start()) {   // not loaded yet: try again shortly, skipping the bit already missed is not worth it
+    let n = 0; const t = setInterval(() => { if (start() || ++n > 20) clearInterval(t); }, 100);
+  }
+}
+
 let chain = 0; let chainAt = -9;   // repeated floor hits within a short time get smaller
 
 export const sfx = {
+  bgmStart,
+  bgmStop,
   // k 0..1 = how hard the ball is squeezed: quiet and dull when light, louder and brighter when hard
   squeeze(k) {
     k = clamp(k);
