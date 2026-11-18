@@ -18,6 +18,7 @@ const LEVEL = {
   end_win: 0.19, end_miss: 0.37, bgm: 1,
 };
 const MAX_VOICES = 6;
+const FX_TRIM = 0.5;   // all sound effects about 6 dB quieter (the music keeps its own level)
 const clamp = (v) => Math.max(0, Math.min(1, v));
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
@@ -66,7 +67,7 @@ function play(name, { gain = 1, rate = 1, lp = 18000, kind = name, gap = 0 } = {
   s.buffer = bufs[name];
   s.playbackRate.value = rate;
   const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp;
-  const g = ctx.createGain(); g.gain.value = gain * LEVEL[name];
+  const g = ctx.createGain(); g.gain.value = gain * LEVEL[name] * FX_TRIM;
   s.connect(f).connect(g).connect(out);
   voices++;
   s.onended = () => { voices--; };
