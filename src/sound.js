@@ -6,14 +6,15 @@
 //   bounce_small "Bouncy ball bouncing on floor" by 89o_dev (CC0) freesound.org/s/869172
 //   hit_1..4    "Bouncing Ball Recordings" by yfjesse (CC0)       freesound.org/s/734241
 //   claw_a/d    "Latch Clicks 2" by Nightflame (CC0)              freesound.org/s/397595
-//   claw_b      "Small servo (arduino)" by gpag1 (CC0)            freesound.org/s/520514
 //   end_win (dreamy music box) / end_miss (boing bubbles): original endings made for LUDUS (synthesized)
-//   claw_a/b/d are softened (high frequencies cut, pitched slightly down) so they don't hurt the ears.
+//   claw_a/d are softened (high frequencies cut, pitched slightly down) so they don't hurt the ears.
 // Browsers only allow sound after a tap, click or key press; the first one unlocks it (PC and phones alike).
+// Levels matched to the other works (AGAPE as the reference): a short touch sound peaks around -34 LUFS,
+// an ending around -26 LUFS, so visitors never have to touch the volume between the six works.
 const LEVEL = {
-  squeeze_1: 0.94, squeeze_2: 1, slip_kiss: 0.6, slip_pop: 0.6, bounce_small: 0.72,
-  hit_1: 0.97, hit_2: 0.88, hit_3: 0.72, hit_4: 0.47, claw_a: 0.8, claw_d: 1, claw_b: 0.3,
-  end_win: 0.9, end_miss: 0.85,
+  squeeze_1: 0.28, squeeze_2: 0.27, slip_kiss: 0.56, slip_pop: 0.6, bounce_small: 0.46,
+  hit_1: 0.75, hit_2: 0.85, hit_3: 0.56, hit_4: 0.37, claw_a: 0.38, claw_d: 0.48,
+  end_win: 0.19, end_miss: 0.37,
 };
 const MAX_VOICES = 6;
 const clamp = (v) => Math.max(0, Math.min(1, v));
@@ -103,9 +104,7 @@ export const sfx = {
   miss() { play('end_miss', { kind: 'ending', gap: 1 }); },
   clawClose() { play('claw_a', { kind: 'clawCmd', gap: 0.08, rate: jitter(0.05) }); },
   clawOpen() { play('claw_d', { kind: 'clawCmd', gap: 0.08, rate: jitter(0.05) }); },
-  // the claw starts moving; speed in m/s
-  clawMove(speed) {
-    const k = clamp(speed / 1.1);
-    play('claw_b', { kind: 'clawMove', gap: 0.7, gain: 0.4 + 0.6 * k, rate: (0.95 + 0.15 * k) * jitter(0.04) });
-  },
+  // moving the claw left/right/up/down is silent (the servo whirr sounded torn)
+  clawMove() {},
+
 };
