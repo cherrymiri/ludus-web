@@ -7,6 +7,7 @@
 //   hit_1..4    "Bouncing Ball Recordings" by yfjesse (CC0)       freesound.org/s/734241
 //   claw_a/d    "Latch Clicks 2" by Nightflame (CC0)              freesound.org/s/397595
 //   claw_b      "Small servo (arduino)" by gpag1 (CC0)            freesound.org/s/520514
+//   claw_a/b/d are softened (high frequencies cut, pitched slightly down) so they don't hurt the ears.
 // Browsers only allow sound after a tap, click or key press; the first one unlocks it (PC and phones alike).
 const LEVEL = {
   squeeze_1: 0.94, squeeze_2: 1, slip_kiss: 0.9, slip_pop: 1, bounce_small: 0.72,
