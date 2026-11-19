@@ -43,7 +43,16 @@ function setup() {
   comp.threshold.value = -16; comp.knee.value = 4; comp.ratio.value = 20; comp.attack.value = 0.001; comp.release.value = 0.1;
   out = ctx.createGain();
   out.gain.value = 0.85;
-  out.connect(comp).connect(ctx.destination);
+  out.connect(comp);
+  // iPhone/iPad: Web Audio alone is muted by the silent switch. EROS gets through because its microphone
+  // switches the phone into 'call' audio; without asking for the mic, the same effect comes from playing
+  // the mix through an ordinary <audio> element (media playback ignores the silent switch).
+  if (IOS && ctx.createMediaStreamDestination) {
+    const dest = ctx.createMediaStreamDestination();
+    comp.connect(dest);
+    iosOut = new Audio(); iosOut.srcObject = dest.stream; iosOut.setAttribute('playsinline', '');
+    iosComp = comp;
+  } else comp.connect(ctx.destination);
   const base = import.meta.env.BASE_URL || '/';
   for (const n of Object.keys(LEVEL)) {
     fetch(`${base}sfx/${n}.mp3`).then((r) => r.arrayBuffer()).then(decode).then((b) => { bufs[n] = b; }).catch(() => {});
@@ -52,6 +61,8 @@ function setup() {
 // iPhone: Web Audio is muted when the ring/silent switch is on silent. Telling Safari this is media playback
 // (audioSession, iOS 16.4+) and keeping a silent <audio> element playing (older iOS) lets the sounds through.
 let mediaKick = null;
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let iosOut = null; let iosComp = null; let iosFallback = false;
 try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
 function unlock() {
   setup();
@@ -64,9 +75,19 @@ function unlock() {
     mediaKick.loop = true; mediaKick.setAttribute('playsinline', ''); mediaKick.preload = 'auto';
   }
   if (mediaKick.paused) mediaKick.play().catch(() => {});
+  if (iosOut && iosOut.paused) {
+    iosOut.play().catch(() => {
+      // if the phone refuses the <audio> route, fall back to normal output (sound needs the switch off then)
+      if (!iosFallback) { iosFallback = true; iosComp.connect(ctx.destination); }
+    });
+  }
 }
 // coming back to the tab (or after a phone call / lock screen) the audio may be suspended again
-document.addEventListener('visibilitychange', () => { if (!document.hidden && ctx && ctx.state !== 'running') ctx.resume().catch(() => {}); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+  if (iosOut && iosOut.paused && !iosFallback) iosOut.play().catch(() => {});
+});
 for (const e of ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown']) window.addEventListener(e, unlock, { capture: true, passive: true });
 setup();   // load the sounds (and the music) right away; they stay silent until the first tap unlocks audio
 
