@@ -62,10 +62,11 @@ export class Hud {
       const hWin = this.win.offsetHeight;
       // centre the whole group (text, lyrics, button) in the open space under the line
       let top = (this.lineY + H) / 2 - hWin / 2;
-      // phones held upright: the English result line sits at the middle of the screen as the main phrase
+      // phones held upright: "Okay, you win!" sits exactly where "Missed me!" does (same centre as the miss group)
       if (H > this.win.ownerDocument.documentElement.clientWidth) {
-        const t = this.win.querySelector('.win-text');
-        top = H * 0.5 - (t ? t.offsetHeight : 60) / 2;
+        top = Math.min(Math.max(y - hWin / 2, 12), H - hWin - 12);
+        this.win.style.setProperty('--win-y', `${top}px`);
+        return;
       }
       this.win.style.setProperty('--win-y', `${Math.max(12, Math.min(Math.max(this.lineY + 16, top), H - hWin - 18))}px`);
     }
