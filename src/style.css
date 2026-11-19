@@ -520,7 +520,9 @@ body[data-mode='missed'] #success-line {
 .touch-ui {
   transition: opacity 0.5s ease;
 }
-body[data-mode='idle'] .touch-ui {
+body[data-mode='idle'] .touch-ui,
+body[data-mode='won'] .touch-ui,
+body[data-mode='missed'] .touch-ui {
   opacity: 0;
   pointer-events: none;
 }
@@ -964,7 +966,11 @@ body.is-touch .for-mouse {
     --gap-button: 24px;
   }
   #win .miss-text {
-    font-size: 46px;
+    font-size: clamp(54px, 15vw, 64px);
+  }
+  /* 엔딩의 메인 문구: 영어 결과 문구를 크게 */
+  #win .win-text {
+    font-size: clamp(54px, 15vw, 64px);
   }
   #win .verse-lyrics,
   #win .verse-glow {

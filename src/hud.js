@@ -61,7 +61,12 @@ export class Hud {
     if (!had) {
       const hWin = this.win.offsetHeight;
       // centre the whole group (text, lyrics, button) in the open space under the line
-      const top = (this.lineY + H) / 2 - hWin / 2;
+      let top = (this.lineY + H) / 2 - hWin / 2;
+      // phones held upright: the English result line sits at the middle of the screen as the main phrase
+      if (H > this.win.ownerDocument.documentElement.clientWidth) {
+        const t = this.win.querySelector('.win-text');
+        top = H * 0.5 - (t ? t.offsetHeight : 60) / 2;
+      }
       this.win.style.setProperty('--win-y', `${Math.max(12, Math.min(Math.max(this.lineY + 16, top), H - hWin - 18))}px`);
     }
   }
