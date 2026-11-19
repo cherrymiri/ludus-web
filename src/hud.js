@@ -62,9 +62,9 @@ export class Hud {
       const hWin = this.win.offsetHeight;
       // centre the whole group (text, lyrics, button) in the open space under the line
       let top = (this.lineY + H) / 2 - hWin / 2;
-      // phones held upright: "Okay, you win!" sits exactly where "Missed me!" does (same centre as the miss group)
+      // phones held upright: "Okay, you win!" sits just under the success line, clear of its glow
       if (H > this.win.ownerDocument.documentElement.clientWidth) {
-        top = Math.min(Math.max(y - hWin / 2, 12), H - hWin - 12);
+        top = Math.min(Math.max(y - hWin / 2, this.lineY + 28), H - hWin - 12);
         this.win.style.setProperty('--win-y', `${top}px`);
         return;
       }
