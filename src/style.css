@@ -979,6 +979,16 @@ body.is-touch .for-mouse {
   .timer-digits {
     font-size: 21px;
   }
+  /* 잡기 버튼을 높이 슬라이더 바로 아래에: 한 손(엄지)으로 올리기/내리기와 잡기를 이어서 조작 */
+  .grab {
+    left: auto;
+    right: max(4px, env(safe-area-inset-right, 0px));
+    bottom: auto;
+    top: calc(50% + min(20vh, 160px) + 18px);
+    width: 64px;
+    height: 64px;
+    margin-left: 0;
+  }
 }
 /* phones sideways: little height, so keep only title + controls */
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) {
