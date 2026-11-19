@@ -49,14 +49,25 @@ function setup() {
     fetch(`${base}sfx/${n}.mp3`).then((r) => r.arrayBuffer()).then(decode).then((b) => { bufs[n] = b; }).catch(() => {});
   }
 }
+// iPhone: Web Audio is muted when the ring/silent switch is on silent. Telling Safari this is media playback
+// (audioSession, iOS 16.4+) and keeping a silent <audio> element playing (older iOS) lets the sounds through.
+let mediaKick = null;
+try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch {}
 function unlock() {
   setup();
   if (!ctx) return;
   if (ctx.state !== 'running') ctx.resume().catch(() => {});
   // iOS wakes up only after something actually plays inside the gesture.
   const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0);
+  if (!mediaKick) {
+    mediaKick = new Audio(`${import.meta.env.BASE_URL || '/'}sfx/silence.mp3`);
+    mediaKick.loop = true; mediaKick.setAttribute('playsinline', ''); mediaKick.preload = 'auto';
+  }
+  if (mediaKick.paused) mediaKick.play().catch(() => {});
 }
-for (const e of ['pointerdown', 'touchend', 'click', 'keydown']) window.addEventListener(e, unlock, { capture: true, passive: true });
+// coming back to the tab (or after a phone call / lock screen) the audio may be suspended again
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ctx && ctx.state !== 'running') ctx.resume().catch(() => {}); });
+for (const e of ['pointerdown', 'touchstart', 'touchend', 'click', 'keydown']) window.addEventListener(e, unlock, { capture: true, passive: true });
 setup();   // load the sounds (and the music) right away; they stay silent until the first tap unlocks audio
 
 // gap: the same kind of sound never repeats faster than this (seconds).
@@ -80,24 +91,32 @@ const jitter = (k) => 1 + (Math.random() - 0.5) * k;
 // background music: starts with the 45 s countdown, loops only if a round runs longer (second chance)
 let bgm = null;
 function bgmStop(fade = 1.0) {
+  clearInterval(bgmTry);
   if (!bgm || !ctx) return;
   const { s, g } = bgm; bgm = null;
   g.gain.cancelScheduledValues(ctx.currentTime);
   g.gain.setTargetAtTime(0, ctx.currentTime, fade / 3);
   try { s.stop(ctx.currentTime + fade + 0.1); } catch {}
 }
+let bgmTry = null;
 function bgmStart() {
   if (!ctx) return;
   bgmStop(0.15);
+  clearInterval(bgmTry);
+  const t0 = performance.now();
+  // On a phone the music file can take a few seconds to arrive, or audio may still be waking up:
+  // keep trying, and when it does start, jump to where the countdown already is so they stay in step.
   const start = () => {
     if (!bufs.bgm || ctx.state !== 'running') return false;
+    const at = ((performance.now() - t0) / 1000) % 45;
     const s = ctx.createBufferSource(); s.buffer = bufs.bgm; s.loop = true; s.loopEnd = 45;
     const g = ctx.createGain(); g.gain.setValueAtTime(0, ctx.currentTime); g.gain.linearRampToValueAtTime(LEVEL.bgm, ctx.currentTime + 0.3);
-    s.connect(g).connect(out); s.start(); bgm = { s, g };
+    s.connect(g).connect(out); s.start(0, at); bgm = { s, g };
     return true;
   };
-  if (!start()) {   // not loaded yet: try again shortly, skipping the bit already missed is not worth it
-    let n = 0; const t = setInterval(() => { if (start() || ++n > 20) clearInterval(t); }, 100);
+  if (!start()) {
+    let n = 0;
+    bgmTry = setInterval(() => { if (start() || ++n > 400) clearInterval(bgmTry); }, 100);
   }
 }
 
