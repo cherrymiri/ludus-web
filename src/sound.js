@@ -17,10 +17,10 @@ import { speakerOut } from './iosAudio.js';
 const LEVEL = {
   squeeze_1: 0.28, squeeze_2: 0.27, slip_kiss: 0.56, slip_pop: 0.6, bounce_small: 0.46,
   hit_1: 0.75, hit_2: 0.85, hit_3: 0.56, hit_4: 0.37, claw_a: 0.54, claw_d: 0.48,
-  end_win: 0.19, end_miss: 0.26, bgm: 1,
+  end_win: 0.17, end_miss: 0.26, bgm: 1,
 };
 const MAX_VOICES = 6;
-const FX_TRIM = 0.5;   // all sound effects about 6 dB quieter (the music keeps its own level)
+const FX_TRIM = 0.63;  // touch sounds at about -38 LUFS, the level shared by all six works (the music keeps its own level)
 const clamp = (v) => Math.max(0, Math.min(1, v));
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
