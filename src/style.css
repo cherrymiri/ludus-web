@@ -926,6 +926,10 @@ body.is-touch .for-mouse {
 
 /* phones held upright: guide sits under the title, controls at the edges */
 @media (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  /* 휴대폰 세로: 갤러리 BACK TO GALLERY와 이름·설명 사이를 띄움 (제목·안내·타이머를 함께 내림) */
+  .title {
+    top: calc(var(--gutter) + 34px);
+  }
   .title h1 {
     font-size: 28px;
   }
@@ -933,7 +937,7 @@ body.is-touch .for-mouse {
     margin: 14px 0 10px;
   }
   .howto {
-    top: calc(var(--gutter) + 92px);
+    top: calc(var(--gutter) + 126px);
     left: var(--gutter);
     right: auto;
     bottom: auto;
@@ -979,7 +983,7 @@ body.is-touch .for-mouse {
   #timer {
     position: fixed;
     right: var(--gutter);
-    top: calc(var(--gutter) + 2px);
+    top: calc(var(--gutter) + 36px);
     margin: 0;
   }
   .timer-digits {
